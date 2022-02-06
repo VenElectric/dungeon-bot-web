@@ -30,7 +30,7 @@ const sessionData = reactive({
   isSorted: false,
   spells: [] as SpellObject[],
   sessionId: "",
-  socket: io("localhost:8000"),
+  socket: io("https://dungeon-bot-server.herokuapp.com"),
 });
 
 const spellsDoubleArray = (
