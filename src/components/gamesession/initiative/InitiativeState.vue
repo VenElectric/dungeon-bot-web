@@ -4,7 +4,7 @@
     <div>
       <ToolBar>
         <template #start>
-          <div v-if="!store.store.isSorted">
+          <div v-if="!isSorted">
             <Button
               label="Start Rounds"
               class="p-button-sm p-button-info"
@@ -49,16 +49,6 @@
         </template>
       </ToolBar>
       <SortableList :initiativeList="store.store.initiativeList">
-        <template v-slot:default="record">
-          <InitiativeRecordHeader
-            :reRoll="store.reRoll"
-            :record="record.item"
-            :updateCharacter="store.updateCharacterItem"
-            :removeCharacter="store.removeCharacter"
-            :index="record.index"
-            :isCurrent="store.setCurrent"
-          ></InitiativeRecordHeader>
-        </template>
       </SortableList>
     </div>
   </div>
@@ -68,7 +58,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref, inject, watch } from "vue";
+import { defineComponent, onMounted, ref, inject, watch, computed } from "vue";
 import InitiativeRecordHeader from "./InitiativeRecordHeader.vue";
 import OverlayPanel from "primevue/overlaypanel";
 import AddInitiative from "./AddInitiative.vue";
@@ -93,14 +83,20 @@ export default defineComponent({
     Button,
     Skeleton,
     SortableList,
-    InitiativeRecordHeader,
     Toast,
     ConfirmPopup,
   },
   setup() {
     const store = inject<IStore>("store");
     const loading = ref(true);
-    const isSorted = ref();
+    const isSorted = computed({
+      get() {
+        return store?.getSorted();
+      },
+      set(newValue) {
+        newValue;
+      },
+    });
     const toast = useToast();
     const confirm = useConfirm();
     let op = ref(null);
@@ -114,8 +110,8 @@ export default defineComponent({
     }
 
     onMounted(() => {
+      loading.value = true;
       store.getInitial();
-      isSorted.value = store.store.isSorted;
       serverLogger(
         LoggingTypes.info,
         `retrieved initial init state`,
@@ -130,19 +126,6 @@ export default defineComponent({
         );
       }, 500);
     });
-
-    watch(
-      () => store.store.isSorted,
-      () => {
-        serverLogger(
-          LoggingTypes.debug,
-          `watch triggered: issorted`,
-          ComponentEnums.INITIATIVESTATE
-        );
-        isSorted.value = store.store.isSorted;
-      },
-      { deep: true }
-    );
 
     function toggle(event: any) {
       (op.value as any).toggle(event);
@@ -226,6 +209,7 @@ export default defineComponent({
       op,
       addCharacter,
       confirm1,
+      isSorted,
     };
   },
 });

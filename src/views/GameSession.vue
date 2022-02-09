@@ -28,13 +28,13 @@
 
   <div class="flex flex-row justify-content-evenly">
     <!-- Initiative List -->
-    <div class="flex flex-column column-container">
+    <div class="flex flex-column column-container md:col-4">
       <h1>Initiative List</h1>
       <InitiativeState></InitiativeState>
     </div>
     <!-- Spell List -->
 
-    <div class="flex flex-column column-container">
+    <div class="flex flex-column column-container md:col-4">
       <h1>Spell List</h1>
       <SpellState></SpellState>
     </div>
@@ -80,8 +80,6 @@ export default defineComponent({
     const confirm = useConfirm();
     const toast = useToast();
     const paramsId = String(route.params.id);
-    console.info(paramsId);
-    // let paramsId = "731278337917452380";
     if (store && paramsId) {
       store.updateId(paramsId);
       serverLogger(

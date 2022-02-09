@@ -85,6 +85,10 @@ export default defineComponent({
         ComponentEnums.SOCKETRECEIVER
       );
       socket?.on(EmitTypes.UPDATE_SESSION, (isSorted: boolean) => {
+        if (isSorted === undefined) {
+          console.log("undefined");
+          /// logic here to retrieve session data
+        }
         serverLogger(
           LoggingTypes.debug,
           `${EmitTypes.UPDATE_SESSION} Updating isSorted: ${isSorted}`,
@@ -103,6 +107,7 @@ export default defineComponent({
         }
       });
       socket?.on(EmitTypes.CREATE_NEW_INITIATIVE, (data: InitiativeObject) => {
+        /// check if any data is undefined and then send a request to server for updating initiative list.
         serverLogger(
           LoggingTypes.info,
           `${EmitTypes.CREATE_NEW_INITIATIVE} Adding initiative`,
@@ -116,6 +121,7 @@ export default defineComponent({
           data.id
         );
         if (store.store.isSorted) {
+          store.updateSorted(false);
           toast.add({
             severity: "warn",
             summary: "Warning Message",
@@ -158,6 +164,7 @@ export default defineComponent({
         }
       });
       socket?.on(EmitTypes.CREATE_NEW_SPELL, (data: ServerSpellObject) => {
+        /// check if any data is undefined and then send a request to server for updated spell list.
         if (isServerSpellObject(data)) {
           serverLogger(
             LoggingTypes.debug,
@@ -166,30 +173,14 @@ export default defineComponent({
             data.id
           );
           try {
-            const serverObject: SpellObject = {
-              effectName: data.effectName,
-              effectDescription: data.effectDescription,
-              id: data.id,
-              durationTime: data.durationTime,
-              durationType: data.durationType,
-              characterIds: [],
-            };
-            serverLogger(
-              LoggingTypes.debug,
-              `${EmitTypes.CREATE_NEW_SPELL} changing characterids to double array`,
-              ComponentEnums.SOCKETRECEIVER,
-              data.id
-            );
-            serverObject.characterIds = store.spellsDoubleArray(
-              data.characterIds
-            );
             serverLogger(
               LoggingTypes.debug,
               `${EmitTypes.CREATE_NEW_SPELL} adding spell object to store`,
               ComponentEnums.SOCKETRECEIVER,
               data.id
             );
-            store.store.spells.push(serverObject);
+            // add a function to store to add this instead of using the store.store
+            store.store.spells.push(data);
             serverLogger(
               LoggingTypes.info,
               `${EmitTypes.CREATE_NEW_SPELL} spell object added`,
@@ -211,6 +202,7 @@ export default defineComponent({
       socket?.on(
         EmitTypes.UPDATE_ALL_INITIATIVE,
         (data: { payload: InitiativeObject[]; isSorted: boolean }) => {
+          /// check if any data is undefined and then send a request to server for updated initiative list.
           if (data.payload.length < 1) {
             return;
           }
@@ -264,6 +256,7 @@ export default defineComponent({
         }
       );
       socket?.on(EmitTypes.UPDATE_ALL_SPELL, (data: ServerSpellObject[]) => {
+        /// check if any data is undefined and then send a request to server for updated spell list.
         if (data.length < 1) {
           return;
         }
@@ -271,34 +264,14 @@ export default defineComponent({
           serverLogger(
             LoggingTypes.debug,
             `${EmitTypes.UPDATE_ALL_SPELL} creating spell object`,
-            ComponentEnums.SOCKETRECEIVER,
-            data[0].id
+            ComponentEnums.SOCKETRECEIVER
           );
           try {
-            let spellsArray = [] as SpellObject[];
-            data.forEach((item: ServerSpellObject, index) => {
-              let characterIds = store.spellsDoubleArray(item.characterIds);
-              spellsArray.push({
-                effectName: item.effectName,
-                effectDescription: item.effectDescription,
-                characterIds: characterIds,
-                id: item.id,
-                durationTime: item.durationTime,
-                durationType: item.durationType,
-              });
-              serverLogger(
-                LoggingTypes.debug,
-                `${EmitTypes.UPDATE_ALL_SPELL} spell object added`,
-                ComponentEnums.SOCKETRECEIVER,
-                item.id
-              );
-            });
-            store.updateAll(CollectionTypes.SPELLS, spellsArray);
+            store.updateAll(CollectionTypes.SPELLS, data);
             serverLogger(
               LoggingTypes.info,
               `${EmitTypes.UPDATE_ALL_SPELL} update complete`,
-              ComponentEnums.SOCKETRECEIVER,
-              data[0].id
+              ComponentEnums.SOCKETRECEIVER
             );
             return;
           } catch (error) {
@@ -350,14 +323,15 @@ export default defineComponent({
       );
       socket?.on(EmitTypes.UPDATE_RECORD_SPELL, (data: SpellObject) => {
         try {
-          if (isServerSpellObject(data)) {
+          console.log(data);
+          if (isSpellObject(data)) {
+            console.log(data);
             serverLogger(
               LoggingTypes.debug,
               `${EmitTypes.UPDATE_RECORD_SPELL} creating spell object`,
               ComponentEnums.SOCKETRECEIVER,
               data.id
             );
-            const characterIds = store.spellsDoubleArray(data.characterIds);
             serverLogger(
               LoggingTypes.debug,
               `${EmitTypes.UPDATE_RECORD_SPELL} characterIds complete`,
@@ -380,8 +354,9 @@ export default defineComponent({
               data.durationType,
               spellIndex,
               false,
-              characterIds
+              data.characterIds
             );
+            console.log(store.store.spells, "spells list");
             serverLogger(
               LoggingTypes.info,
               `${EmitTypes.UPDATE_RECORD_SPELL} update complete`,
@@ -413,6 +388,7 @@ export default defineComponent({
             data.docId
           );
           try {
+            console.log(data);
             serverLogger(
               LoggingTypes.debug,
               `${EmitTypes.UPDATE_ITEM_INITIATIVE} item to update: ${data.ObjectType} value: ${data.toUpdate}`,

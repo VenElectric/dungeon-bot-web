@@ -27,7 +27,7 @@
         icon="pi pi-info-circle"
         class="p-button-sm p-button-success"
         v-tooltip.top="
-          'Enter the d20 roll for your initiative. Do not add your modifier. Integers only'
+          'Enter the d20 roll for your initiative + your modifier. Integers only'
         "
       />
       <InputNumber

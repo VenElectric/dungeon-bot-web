@@ -12,19 +12,6 @@
   <router-view />
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue";
-import { io } from "socket.io-client";
-
-export default defineComponent({
-  provide() {
-    return {
-      socket: io("localhost:8000"),
-    };
-  },
-});
-</script>
-
 <style lang="scss">
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;

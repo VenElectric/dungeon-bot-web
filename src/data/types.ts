@@ -57,7 +57,7 @@ export interface IStore {
   startDrag: (evt: DragEvent, index: number) => void;
   dragOver: (evt: DragEvent) => void;
   dragEnter: (evt: DragEvent) => void;
-  onDrop: (evt: DragEvent, index: number) => void;
+  onDrop: (evt: any) => void;
   updateSpell: (
     effectName: string,
     effectDescription: string,
@@ -65,25 +65,29 @@ export interface IStore {
     durationType: string,
     index: number,
     emit: boolean,
-    characterIds?: CharacterStatus[][]
+    characterIds?: CharacterStatusFirestore
   ) => void;
   updateSpellItem: (
     ObjectType: SpellObjectEnums,
     toUpdate: any,
     index: number
   ) => void;
-  changeAllCharacterStatus: (index: number, moveTo: string) => void;
-  changeOneCharacterStatus: (
+  changeAllCharacterToTarget: (index: number) => void;
+  changeAllCharacterToSource: (index: number) => void;
+  changeOneCharacterToTarget: (
     e: CharacterPickListEvent,
-    index: number,
-    moveTo: string
+    index: number
+  ) => void;
+  changeOneCharacterToSource: (
+    e: CharacterPickListEvent,
+    index: number
   ) => void;
   roundStart: () => void;
   getInitiative: () => InitiativeObject[];
   getSpells: () => SpellObject[];
   getSorted: () => boolean;
   reSort: () => void;
-  setCurrent: () => void;
+  setCurrent: (index: number) => void;
   nextTurn: () => void;
   previousTurn: () => void;
   toDiscord: (collectionType: CollectionTypes) => void;

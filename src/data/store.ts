@@ -18,19 +18,20 @@ import { DiceRoll } from "@dice-roller/rpg-dice-roller";
 import { Character, CharacterPickListEvent } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import {
-  isDoubleArray,
   isInitiativeObjectArray,
   isSpellObjectArray,
 } from "../Utils/TypeChecking";
 import serverLogger from "../Utils/LoggingClass";
 import { StoreEnums, LoggingTypes } from "../Interfaces/LoggingTypes";
 
+const socketString = "https://dungeon-bot-server.herokuapp.com";
+
 const sessionData = reactive({
   initiativeList: [] as InitiativeObject[],
   isSorted: false,
   spells: [] as SpellObject[],
   sessionId: "",
-  socket: io("https://dungeon-bot-server.herokuapp.com"),
+  socket: io("localhost:8000"),
 });
 
 const spellsDoubleArray = (
@@ -45,6 +46,14 @@ const spellsDoubleArray = (
   doubleArray[0] = item.source;
   doubleArray[1] = item.target;
   return doubleArray;
+};
+
+const checkLengthDoubleArray = (item: { target: any[]; source: any[] }) => {
+  if (item.target.length < 1 && item.source.length < 1) {
+    return false;
+  } else {
+    return true;
+  }
 };
 
 const alltoFalse = (): void => {
@@ -125,6 +134,25 @@ const updateAll = (
   }
 };
 
+const updateAllSpells = (data: SpellObject[]): void => {
+  sessionData.spells = data;
+  serverLogger(
+    LoggingTypes.info,
+    `update complete initiative`,
+    StoreEnums.updateAll
+  );
+};
+
+const updateAllInitiative = (data: InitiativeObject[]): void => {
+  sessionData.initiativeList = data;
+  serverLogger(
+    LoggingTypes.info,
+    `update complete initiative`,
+    StoreEnums.updateAll
+  );
+  return;
+};
+
 const getInitial = (): void => {
   serverLogger(
     LoggingTypes.info,
@@ -155,7 +183,7 @@ const getInitialSpells = (): void => {
   sessionData.socket.emit(
     EmitTypes.GET_SPELLS,
     sessionData.sessionId,
-    (spells: ServerSpellObject[]) => {
+    (spells: SpellObject[]) => {
       serverLogger(
         LoggingTypes.debug,
         `Length: ${spells.length} First ID: ${
@@ -164,16 +192,7 @@ const getInitialSpells = (): void => {
         StoreEnums.getInitialSpells
       );
       try {
-        spells.forEach((spell: ServerSpellObject) => {
-          sessionData.spells.push({
-            id: spell.id,
-            effectName: spell.effectName,
-            effectDescription: spell.effectDescription,
-            durationTime: spell.durationTime,
-            durationType: spell.durationType,
-            characterIds: spellsDoubleArray(spell.characterIds),
-          });
-        });
+        sessionData.spells = spells;
       } catch (error) {
         if (error instanceof Error) {
           serverLogger(
@@ -241,7 +260,6 @@ const updateCharacterItem = (
       sessionData.socket.emit(EmitTypes.UPDATE_ITEM_INITIATIVE, {
         ObjectType: ObjectType,
         toUpdate: toUpdate,
-        collectionType: CollectionTypes.INITIATIVE,
         sessionId: sessionData.sessionId,
         docId: docId,
       });
@@ -333,12 +351,10 @@ const addCharacter = (data: Character, roll: boolean, npc: boolean): void => {
       characterId
     );
     sessionData.spells.forEach((spell: SpellObject) => {
-      if (isDoubleArray(spell.characterIds)) {
-        spell.characterIds[0].push({
-          characterName: newData.characterName,
-          characterId: newData.id,
-        });
-      }
+      spell.characterIds.source.push({
+        characterName: newData.characterName,
+        characterId: newData.id,
+      });
     });
 
     serverLogger(
@@ -349,9 +365,7 @@ const addCharacter = (data: Character, roll: boolean, npc: boolean): void => {
     sessionData.socket.emit(EmitTypes.UPDATE_ALL_SPELL, {
       payload: sessionData.spells,
       sessionId: sessionData.sessionId,
-      collectionType: CollectionTypes.SPELLS,
-      resetOnDeck: false,
-    } as SocketData);
+    });
   }
   serverLogger(
     LoggingTypes.debug,
@@ -362,8 +376,7 @@ const addCharacter = (data: Character, roll: boolean, npc: boolean): void => {
   sessionData.socket.emit(EmitTypes.CREATE_NEW_INITIATIVE, {
     payload: newData,
     sessionId: sessionData.sessionId,
-    collectionType: CollectionTypes.INITIATIVE,
-  } as SocketData);
+  });
 };
 
 const reRoll = (index: number): void => {
@@ -398,32 +411,7 @@ const removeCharacter = (index: number, id: string, emit: boolean): void => {
     id
   );
   if (sessionData.spells.length > 0) {
-    for (const [spellIndex, spell] of sessionData.spells.entries()) {
-      const indexZero = spell.characterIds[0]
-        .map((item: CharacterStatus) => item.characterId)
-        .indexOf(id);
-      const indexOne = spell.characterIds[1]
-        .map((item: CharacterStatus) => item.characterId)
-        .indexOf(id);
-      const finalIndex = indexZero != -1 ? indexZero : indexOne;
-      if (indexZero != -1 && indexOne == -1) {
-        serverLogger(
-          LoggingTypes.debug,
-          `removing character from spell.characterIds at indexZero`,
-          StoreEnums.removeCharacter,
-          spell.id
-        );
-        sessionData.spells[spellIndex].characterIds[0].splice(finalIndex, 1);
-      } else if (indexZero == -1 && indexOne != -1) {
-        serverLogger(
-          LoggingTypes.debug,
-          `removing character from spell.characterIds at indexOne`,
-          StoreEnums.removeCharacter,
-          spell.id
-        );
-        sessionData.spells[spellIndex].characterIds[1].splice(finalIndex, 1);
-      }
-    }
+    removeCharacterFromSpells(id);
   }
 
   if (emit) {
@@ -435,11 +423,9 @@ const removeCharacter = (index: number, id: string, emit: boolean): void => {
         id
       );
       sessionData.socket.emit(EmitTypes.DELETE_ONE_INITIATIVE, {
-        payload: [],
         sessionId: sessionData.sessionId,
-        collectionType: CollectionTypes.INITIATIVE,
         docId: id,
-      } as SocketData);
+      });
       serverLogger(
         LoggingTypes.debug,
         `emitting ${EmitTypes.UPDATE_ALL_SPELL} for spells`,
@@ -449,10 +435,37 @@ const removeCharacter = (index: number, id: string, emit: boolean): void => {
       sessionData.socket.emit(EmitTypes.UPDATE_ALL_SPELL, {
         payload: sessionData.spells,
         sessionId: sessionData.sessionId,
-        collectionType: CollectionTypes.SPELLS,
-        resetOnDeck: false,
       });
     }, 200);
+  }
+};
+
+const removeCharacterFromSpells = (characterId: string): void => {
+  for (const [spellIndex, spell] of sessionData.spells.entries()) {
+    const indexZero = spell.characterIds.source
+      .map((item: CharacterStatus) => item.characterId)
+      .indexOf(characterId);
+    const indexOne = spell.characterIds.target
+      .map((item: CharacterStatus) => item.characterId)
+      .indexOf(characterId);
+    const finalIndex = indexZero != -1 ? indexZero : indexOne;
+    if (indexZero != -1 && indexOne == -1) {
+      serverLogger(
+        LoggingTypes.debug,
+        `removing character from spell.characterIds at indexZero`,
+        StoreEnums.removeCharacter,
+        spell.id
+      );
+      sessionData.spells[spellIndex].characterIds.source.splice(finalIndex, 1);
+    } else if (indexZero == -1 && indexOne != -1) {
+      serverLogger(
+        LoggingTypes.debug,
+        `removing character from spell.characterIds at indexOne`,
+        StoreEnums.removeCharacter,
+        spell.id
+      );
+      sessionData.spells[spellIndex].characterIds.target.splice(finalIndex, 1);
+    }
   }
 };
 
@@ -486,7 +499,6 @@ const removeSpell = (index: number, id: string, emit: boolean): void => {
       sessionData.socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
         payload: sessionData.initiativeList,
         sessionId: sessionData.sessionId,
-        collectionType: CollectionTypes.INITIATIVE,
         resetOnDeck: false,
         isSorted: sessionData.isSorted,
       });
@@ -497,11 +509,9 @@ const removeSpell = (index: number, id: string, emit: boolean): void => {
         id
       );
       sessionData.socket.emit(EmitTypes.DELETE_ONE_SPELL, {
-        payload: [],
         sessionId: sessionData.sessionId,
-        collectionType: CollectionTypes.SPELLS,
         docId: id,
-      } as SocketData);
+      });
     }
   }, 200);
 };
@@ -520,7 +530,7 @@ const addSpell = (data: any): void => {
     effectName: data.effectName,
     effectDescription: data.effectDescription,
     id: id,
-    characterIds: [[], []] as CharacterStatus[][],
+    characterIds: { target: [], source: [] } as CharacterStatusFirestore,
   };
   serverLogger(
     LoggingTypes.debug,
@@ -528,13 +538,19 @@ const addSpell = (data: any): void => {
     StoreEnums.addSpell,
     id
   );
-  sessionData.initiativeList.forEach((item: InitiativeObject) => {
-    newData.characterIds[0].push({
-      characterName: item.characterName,
-      characterId: item.id,
+  if (sessionData.initiativeList.length > 0) {
+    sessionData.initiativeList.forEach((item: InitiativeObject) => {
+      newData.characterIds.source.push({
+        characterName: item.characterName,
+        characterId: item.id,
+      });
     });
-  });
+  } else {
+    newData.characterIds.source = [];
+    newData.characterIds.target = [];
+  }
   sessionData.spells.push(newData);
+
   serverLogger(
     LoggingTypes.debug,
     `spell added to store, emitting ${EmitTypes.CREATE_NEW_SPELL}`,
@@ -545,8 +561,7 @@ const addSpell = (data: any): void => {
   sessionData.socket.emit(EmitTypes.CREATE_NEW_SPELL, {
     payload: newData,
     sessionId: sessionData.sessionId,
-    collectionType: CollectionTypes.SPELLS,
-  } as SocketData);
+  });
 };
 
 const updateSpell = (
@@ -556,7 +571,7 @@ const updateSpell = (
   durationType: string,
   index: number,
   emit: boolean,
-  characterIds?: CharacterStatus[][]
+  characterIds?: CharacterStatusFirestore
 ): void => {
   serverLogger(
     LoggingTypes.debug,
@@ -571,6 +586,7 @@ const updateSpell = (
   if (characterIds) {
     sessionData.spells[index].characterIds = characterIds;
   }
+  console.log(characterIds);
   if (emit) {
     serverLogger(
       LoggingTypes.debug,
@@ -580,7 +596,6 @@ const updateSpell = (
     );
     const options = {
       payload: sessionData.spells[index],
-      collectionType: CollectionTypes.SPELLS,
       sessionId: sessionData.sessionId,
     };
     sessionData.socket.emit(EmitTypes.UPDATE_RECORD_SPELL, options);
@@ -633,36 +648,32 @@ const dragEnter = (evt: DragEvent): void => {
   console.log(evt, "dragEnter");
 };
 
-const onDrop = (evt: DragEvent, index: number): void => {
-  if (evt.dataTransfer !== null) {
-    const itemIndex = Number(evt.dataTransfer.getData("itemIndex"));
-    const toMove = { ...sessionData.initiativeList[itemIndex] };
-    if (toMove) {
-      sessionData.initiativeList.splice(itemIndex, 1);
-      sessionData.initiativeList.splice(index, 0, toMove);
-      sessionData.initiativeList.forEach((item: InitiativeObject, index) => {
-        sessionData.initiativeList[index].roundOrder = index + 1;
-      });
+const onDrop = (evt: any): void => {
+  const toMove = { ...sessionData.initiativeList[evt.dragIndex] };
+  if (toMove) {
+    sessionData.initiativeList.splice(evt.dragIndex, 1);
+    sessionData.initiativeList.splice(evt.dropIndex, 0, toMove);
+    sessionData.initiativeList.forEach((item: InitiativeObject, index) => {
+      sessionData.initiativeList[index].roundOrder = index + 1;
+    });
+    serverLogger(
+      LoggingTypes.debug,
+      `drop complete, initiativeList order updating`,
+      StoreEnums.onDrop
+    );
+    setTimeout(() => {
       serverLogger(
         LoggingTypes.debug,
-        `drop complete, initiativeList order updating`,
+        `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} after drop completion`,
         StoreEnums.onDrop
       );
-      setTimeout(() => {
-        serverLogger(
-          LoggingTypes.debug,
-          `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} after drop completion`,
-          StoreEnums.onDrop
-        );
-        sessionData.socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
-          payload: sessionData.initiativeList,
-          sessionId: sessionData.sessionId,
-          collectionType: CollectionTypes.INITIATIVE,
-          resetOnDeck: true,
-          isSorted: sessionData.isSorted,
-        });
-      }, 500);
-    }
+      sessionData.socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
+        payload: sessionData.initiativeList,
+        sessionId: sessionData.sessionId,
+        resetOnDeck: true,
+        isSorted: sessionData.isSorted,
+      });
+    }, 500);
   }
 };
 
@@ -737,7 +748,7 @@ function removeStatusEffect(spellId: string, characterIndex: number): void {
   );
 }
 
-const changeAllCharacterStatus = (index: number, moveTo: string): void => {
+const changeAllCharacterToTarget = (index: number): void => {
   serverLogger(
     LoggingTypes.debug,
     `changing all characters to ${moveTo}`,
@@ -745,35 +756,15 @@ const changeAllCharacterStatus = (index: number, moveTo: string): void => {
     sessionData.spells[index].id
   );
   try {
-    if (moveTo === "target") {
-      sessionData.spells[index].characterIds[0] = [
-        ...sessionData.spells[index].characterIds[1],
-      ];
-      sessionData.spells[index].characterIds[0] = [];
-      addStatusEffects(index);
-      serverLogger(
-        LoggingTypes.debug,
-        `update complete, moved to target`,
-        StoreEnums.changeAllCharacterStatus,
-        sessionData.spells[index].id
-      );
-    }
-    if (moveTo === "source") {
-      sessionData.spells[index].characterIds[1] = [
-        ...sessionData.spells[index].characterIds[0],
-      ];
-      sessionData.spells[index].characterIds[1] = [];
-      removeStatusEffects(index);
-      serverLogger(
-        LoggingTypes.debug,
-        `update complete, moved to source`,
-        StoreEnums.changeAllCharacterStatus,
-        sessionData.spells[index].id
-      );
-    }
+    sessionData.spells[index].characterIds.target = [
+      ...sessionData.spells[index].characterIds.target,
+      ...sessionData.spells[index].characterIds.source,
+    ];
+    sessionData.spells[index].characterIds.source = [];
+    addStatusEffects(index);
     serverLogger(
       LoggingTypes.debug,
-      `emitting ${EmitTypes.UPDATE_ALL_SPELL} for spells`,
+      `update complete, moved to target`,
       StoreEnums.changeAllCharacterStatus,
       sessionData.spells[index].id
     );
@@ -782,8 +773,6 @@ const changeAllCharacterStatus = (index: number, moveTo: string): void => {
       {
         payload: sessionData.spells,
         sessionId: sessionData.sessionId,
-        collectionType: CollectionTypes.SPELLS,
-        resetOnDeck: false,
       },
       (data: any) => {
         console.log(data);
@@ -800,7 +789,6 @@ const changeAllCharacterStatus = (index: number, moveTo: string): void => {
       {
         payload: sessionData.initiativeList,
         sessionId: sessionData.sessionId,
-        collectionType: CollectionTypes.INITIATIVE,
         resetOnDeck: false,
         isSorted: sessionData.isSorted,
       },
@@ -820,72 +808,92 @@ const changeAllCharacterStatus = (index: number, moveTo: string): void => {
   }
 };
 
-const changeOneCharacterStatus = (
-  e: CharacterPickListEvent,
-  index: number,
-  moveTo: string
-): void => {
-  if (e.items[0] === undefined) return;
-  const characterId = e.items[0].characterId;
-  const characterIndex = sessionData.initiativeList
-    .map((item: InitiativeObject) => item.id)
-    .indexOf(characterId);
-  serverLogger(
-    LoggingTypes.info,
-    `changing one character status. moveTo: ${moveTo}`,
-    StoreEnums.changeOneCharacterStatus,
-    characterId
-  );
+const changeAllCharacterToSource = (index: number): void => {
   try {
-    if (isDoubleArray(sessionData.spells[index].characterIds)) {
-      if (moveTo === "target") {
-        const spellIndex = sessionData.spells[index].characterIds[0]
-          .map((item: CharacterStatus) => item.characterId)
-          .indexOf(e.items[0].characterId);
-        sessionData.spells[index].characterIds[1].push(
-          sessionData.spells[index].characterIds[0][spellIndex]
-        );
-        sessionData.spells[index].characterIds[0].splice(spellIndex, 1);
-        addStatusEffect(
-          sessionData.spells[index].effectName,
-          sessionData.spells[index].id,
-          sessionData.spells[index].effectDescription,
-          characterIndex
-        );
-        serverLogger(
-          LoggingTypes.info,
-          `status effect moved to target complete`,
-          StoreEnums.changeOneCharacterStatus,
-          characterId
-        );
+    sessionData.spells[index].characterIds.source = [
+      ...sessionData.spells[index].characterIds.source,
+      ...sessionData.spells[index].characterIds.target,
+    ];
+    sessionData.spells[index].characterIds.target = [];
+    removeStatusEffects(index);
+    serverLogger(
+      LoggingTypes.debug,
+      `update complete, moved to source`,
+      StoreEnums.changeAllCharacterStatus,
+      sessionData.spells[index].id
+    );
+    sessionData.socket.emit(
+      EmitTypes.UPDATE_ALL_SPELL,
+      {
+        payload: sessionData.spells,
+        sessionId: sessionData.sessionId,
+      },
+      (data: any) => {
+        console.log(data);
       }
-      if (moveTo === "source") {
-        const spellIndex = sessionData.spells[index].characterIds[1]
-          .map((item: CharacterStatus) => item.characterId)
-          .indexOf(e.items[0].characterId);
-        sessionData.spells[index].characterIds[0].push(
-          sessionData.spells[index].characterIds[1][spellIndex]
-        );
-        sessionData.spells[index].characterIds[1].splice(spellIndex, 1);
-        removeStatusEffect(sessionData.spells[index].id, characterIndex);
-        serverLogger(
-          LoggingTypes.info,
-          `status effect moved to soure complete`,
-          StoreEnums.changeOneCharacterStatus,
-          characterId
-        );
+    );
+    serverLogger(
+      LoggingTypes.debug,
+      `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} for initiative`,
+      StoreEnums.changeAllCharacterStatus,
+      sessionData.spells[index].id
+    );
+    sessionData.socket.emit(
+      EmitTypes.UPDATE_ALL_INITIATIVE,
+      {
+        payload: sessionData.initiativeList,
+        sessionId: sessionData.sessionId,
+        resetOnDeck: false,
+        isSorted: sessionData.isSorted,
+      },
+      (data: any) => {
+        console.log(data);
       }
+    );
+  } catch (error) {
+    if (error instanceof Error) {
+      serverLogger(
+        LoggingTypes.alert,
+        error.message,
+        StoreEnums.changeAllCharacterStatus,
+        sessionData.spells[index].id
+      );
     }
+  }
+};
+
+const changeOneCharacterToSource = (
+  e: CharacterPickListEvent,
+  index: number
+): void => {
+  try {
+    const characterId = e.items[0].characterId;
+    const characterIndex = sessionData.initiativeList
+      .map((item: InitiativeObject) => item.id)
+      .indexOf(characterId);
     serverLogger(
       LoggingTypes.info,
-      `emitting ${EmitTypes.UPDATE_RECORD_SPELL} for spell`,
+      `changing one character status. moveTo: ${moveTo}`,
       StoreEnums.changeOneCharacterStatus,
-      sessionData.spells[index].id
+      characterId
+    );
+    const spellIndex = sessionData.spells[index].characterIds.target
+      .map((item: CharacterStatus) => item.characterId)
+      .indexOf(e.items[0].characterId);
+    sessionData.spells[index].characterIds.source.push(
+      sessionData.spells[index].characterIds.target[spellIndex]
+    );
+    sessionData.spells[index].characterIds.target.splice(spellIndex, 1);
+    removeStatusEffect(sessionData.spells[index].id, characterIndex);
+    serverLogger(
+      LoggingTypes.info,
+      `status effect moved to soure complete`,
+      StoreEnums.changeOneCharacterStatus,
+      characterId
     );
     sessionData.socket.emit(EmitTypes.UPDATE_RECORD_SPELL, {
       payload: sessionData.spells[index],
       sessionId: sessionData.sessionId,
-      collectionType: CollectionTypes.SPELLS,
       docId: sessionData.spells[index].id,
     });
     serverLogger(
@@ -897,7 +905,74 @@ const changeOneCharacterStatus = (
     sessionData.socket.emit(EmitTypes.UPDATE_RECORD_INITIATIVE, {
       payload: sessionData.initiativeList[characterIndex],
       sessionId: sessionData.sessionId,
-      collectionType: CollectionTypes.INITIATIVE,
+      docId: characterId,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      serverLogger(
+        LoggingTypes.alert,
+        error.message,
+        StoreEnums.changeOneCharacterStatus,
+        sessionData.spells[index].id
+      );
+    }
+  }
+};
+
+const changeOneCharacterToTarget = (
+  e: CharacterPickListEvent,
+  index: number
+): void => {
+  try {
+    const characterId = e.items[0].characterId;
+    const characterIndex = sessionData.initiativeList
+      .map((item: InitiativeObject) => item.id)
+      .indexOf(characterId);
+    serverLogger(
+      LoggingTypes.info,
+      `changing one character status. moveTo: ${moveTo}`,
+      StoreEnums.changeOneCharacterStatus,
+      characterId
+    );
+    const spellIndex = sessionData.spells[index].characterIds.source
+      .map((item: CharacterStatus) => item.characterId)
+      .indexOf(e.items[0].characterId);
+    sessionData.spells[index].characterIds.target.push(
+      sessionData.spells[index].characterIds.source[spellIndex]
+    );
+    sessionData.spells[index].characterIds.source.splice(spellIndex, 1);
+    addStatusEffect(
+      sessionData.spells[index].effectName,
+      sessionData.spells[index].id,
+      sessionData.spells[index].effectDescription,
+      characterIndex
+    );
+    serverLogger(
+      LoggingTypes.info,
+      `status effect moved to target complete`,
+      StoreEnums.changeOneCharacterStatus,
+      characterId
+    );
+    serverLogger(
+      LoggingTypes.info,
+      `emitting ${EmitTypes.UPDATE_RECORD_SPELL} for spell`,
+      StoreEnums.changeOneCharacterStatus,
+      sessionData.spells[index].id
+    );
+    sessionData.socket.emit(EmitTypes.UPDATE_RECORD_SPELL, {
+      payload: sessionData.spells[index],
+      sessionId: sessionData.sessionId,
+      docId: sessionData.spells[index].id,
+    });
+    serverLogger(
+      LoggingTypes.info,
+      `emitting ${EmitTypes.UPDATE_RECORD_INITIATIVE} for initiative`,
+      StoreEnums.changeOneCharacterStatus,
+      characterId
+    );
+    sessionData.socket.emit(EmitTypes.UPDATE_RECORD_INITIATIVE, {
+      payload: sessionData.initiativeList[characterIndex],
+      sessionId: sessionData.sessionId,
       docId: characterId,
     });
   } catch (error) {
@@ -984,7 +1059,6 @@ const setCurrent = (index: number): void => {
   );
   sessionData.socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
     payload: sessionData.initiativeList,
-    collectionType: CollectionTypes.INITIATIVE,
     sessionId: sessionData.sessionId,
     resetOnDeck: true,
     isSorted: sessionData.isSorted,
@@ -1042,6 +1116,10 @@ const resetAll = (emit: boolean): void => {
 const resetInitiative = (emit: boolean): void => {
   sessionData.isSorted = false;
   sessionData.initiativeList = [];
+  sessionData.spells.forEach((spell: SpellObject, index) => {
+    sessionData.spells[index].characterIds.source = [];
+    sessionData.spells[index].characterIds.target = [];
+  });
   serverLogger(LoggingTypes.info, `spells reset`, StoreEnums.resetAll);
   if (emit) {
     serverLogger(
@@ -1053,6 +1131,10 @@ const resetInitiative = (emit: boolean): void => {
       EmitTypes.DELETE_ALL_INITIATIVE,
       sessionData.sessionId
     );
+    sessionData.socket.emit(EmitTypes.UPDATE_ALL_SPELL, {
+      payload: sessionData.spells,
+      sessionId: sessionData.sessionId,
+    });
   }
 };
 
@@ -1086,8 +1168,10 @@ export default {
   onDrop,
   updateSpell,
   updateSpellItem,
-  changeAllCharacterStatus,
-  changeOneCharacterStatus,
+  changeAllCharacterToTarget,
+  changeAllCharacterToSource,
+  changeOneCharacterToTarget,
+  changeOneCharacterToSource,
   roundStart,
   getInitiative,
   getSorted,

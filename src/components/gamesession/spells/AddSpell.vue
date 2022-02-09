@@ -28,6 +28,7 @@
         placeholder="Spell Description..."
         v-model="data.effectDescription"
         @update="(e:any) => handleChange(e, SpellObjectEnums.effectDescription)"
+        style="background: rgb(18, 4, 41); color: rgba(255, 255, 255, 0.87)"
       >
       </textarea>
     </div>

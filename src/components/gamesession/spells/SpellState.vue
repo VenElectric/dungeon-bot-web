@@ -25,24 +25,87 @@
     </ToolBar>
     <div class="spell-items">
       <h2>Spells</h2>
-      <SpellRecord
-        v-for="(item, index) in store.store.spells"
-        :key="item.id"
-        :spell="item"
-        :index="index"
-        :updateSpell="store.updateSpell"
-        :characters="data.characterIds"
-        class="my-2"
-      ></SpellRecord>
+      <DataTable :value="spells" :paginator="true" :rows="10">
+        <Column header="Spell Name">
+          <template #body="record">
+            <div>{{ record.data.effectName }}</div>
+          </template>
+        </Column>
+        <Column header="Duration">
+          <template #body="record">
+            <div>
+              {{ `${record.data.durationTime} ${record.data.durationType}` }}
+            </div>
+          </template>
+        </Column>
+        <Column header="Targets">
+          <template #body="record">
+            <Button
+              type="button"
+              label="Targets"
+              @click="togglePickList"
+              class="p-button-sm"
+            />
+            <OverlayPanel
+              ref="pickListRef"
+              :showCloseIcon="true"
+              :dismissable="true"
+            >
+              <SpellRecord
+                :spell="store.store.spells[record.index]"
+                :index="record.index"
+              >
+              </SpellRecord>
+            </OverlayPanel>
+          </template>
+        </Column>
+        <Column header="Edit/Delete">
+          <template #body="{ data, index }">
+            <Button
+              icon="pi pi-pencil"
+              class="p-button-rounded p-button-success mr-2"
+              @click="modalOpen(data, index)"
+            />
+            <Button
+              icon="pi pi-trash"
+              class="p-button-rounded p-button-danger"
+              @click="() => store.removeSpell(index, data.id, true)"
+            />
+          </template>
+        </Column>
+      </DataTable>
     </div>
+    <Dialog
+      v-model:visible="editSpell"
+      :style="{ width: '450px' }"
+      header="Edit Spell"
+      :modal="true"
+    >
+      <AddSpell
+        :spellFunction="store.updateSpell"
+        :isUpdate="true"
+        :spell="recordValue"
+        :index="indexValue"
+      ></AddSpell>
+    </Dialog>
   </div>
   <div v-else>Loading...</div>
 </template>
 
 <script lang="ts">
-import { defineComponent, inject, ref, onMounted, reactive } from "vue";
+import {
+  defineComponent,
+  inject,
+  ref,
+  onMounted,
+  reactive,
+  watch,
+  onBeforeUnmount,
+  computed,
+} from "vue";
 import AddSpell from "./AddSpell.vue";
 import { IStore } from "../../../data/types";
+import { SpellObject } from "../../../Interfaces/initiative";
 import Button from "primevue/button";
 import OverlayPanel from "primevue/overlaypanel";
 import ToolBar from "primevue/toolbar";
@@ -53,6 +116,9 @@ import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import ConfirmPopup from "primevue/confirmpopup";
 import Toast from "primevue/toast";
+import DataTable from "primevue/datatable";
+import Column from "primevue/column";
+import Dialog from "primevue/dialog";
 
 export default defineComponent({
   name: "SpellList",
@@ -61,9 +127,12 @@ export default defineComponent({
     Button,
     OverlayPanel,
     ToolBar,
-    SpellRecord,
     Toast,
     ConfirmPopup,
+    DataTable,
+    Column,
+    SpellRecord,
+    Dialog,
   },
   setup() {
     interface CharacterInterface {
@@ -73,11 +142,12 @@ export default defineComponent({
     const store = inject<IStore>("store");
     const loading = ref(true);
     const op = ref(null);
-    const data = reactive({
-      characterIds: [] as CharacterInterface[],
-    });
+    const pickListRef = ref(null);
     const confirm = useConfirm();
     const toast = useToast();
+    const editSpell = ref(false);
+    const recordValue = ref<SpellObject>({} as SpellObject);
+    const indexValue = ref(0);
 
     if (store === undefined) {
       serverLogger(
@@ -87,6 +157,11 @@ export default defineComponent({
       );
       throw new Error("Failed to inject store");
     }
+
+    const spells = computed(() => store.getSpells());
+    onBeforeUnmount(() => {
+      store?.resetSpells(false);
+    });
     onMounted(() => {
       store.getInitialSpells();
       serverLogger(
@@ -101,17 +176,15 @@ export default defineComponent({
           `adding characterids`,
           ComponentEnums.SPELLSTATE
         );
-        for (let record of store.store.initiativeList) {
-          data.characterIds.push({
-            characterId: record.id,
-            characterName: record.characterName,
-          });
-        }
       }, 500);
     });
 
     function toggle(event: any) {
       (op.value as any).toggle(event);
+    }
+
+    function togglePickList(event: any) {
+      (pickListRef.value as any).toggle(event);
     }
 
     function addSpell(event: any, data: any) {
@@ -158,14 +231,26 @@ export default defineComponent({
         },
       });
     };
+
+    function modalOpen(data: SpellObject, index: number) {
+      recordValue.value = data;
+      indexValue.value = index;
+      editSpell.value = true;
+    }
     return {
       store,
       loading,
       op,
       toggle,
       addSpell,
-      data,
+      spells,
       confirm1,
+      pickListRef,
+      togglePickList,
+      modalOpen,
+      editSpell,
+      recordValue,
+      indexValue,
     };
   },
 });
