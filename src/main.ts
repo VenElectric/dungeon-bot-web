@@ -10,6 +10,7 @@ import Tooltip from "primevue/tooltip";
 import store from "./data/store";
 import ConfirmationService from "primevue/confirmationservice";
 import ToastService from "primevue/toastservice";
+import BadgeDirective from "primevue/badgedirective";
 
 createApp(App)
   .provide("store", store)
@@ -18,4 +19,5 @@ createApp(App)
   .use(ConfirmationService)
   .use(ToastService)
   .use(router)
+  .directive("badge", BadgeDirective)
   .mount("#app");

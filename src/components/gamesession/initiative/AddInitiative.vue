@@ -1,5 +1,5 @@
 <template>
-  <div class="p-grid p-field">
+  <div class="p-grid p-field m-2">
     <div class="p-inputgroup p-col input-value">
       <Button icon="pi pi-info-circle" class="p-button-sm p-button-success" />
       <InputText
@@ -13,7 +13,8 @@
       />
       <Button
         id="NPC"
-        class="p-button-sm p-button-help"
+        class="p-button-sm"
+        :class="npcClass"
         lable="NPC?"
         v-tooltip.top="'Character is NPC? ' + String(npc)"
         @click.stop="updateNPC"
@@ -21,7 +22,7 @@
       </Button>
     </div>
   </div>
-  <div class="p-grid p-field">
+  <div class="p-grid p-field m-2">
     <div class="p-inputgroup p-col input-value">
       <Button
         icon="pi pi-info-circle"
@@ -41,19 +42,20 @@
       />
       <Button
         id="roll"
-        class="p-button-sm p-button-help"
+        class="p-button-sm"
+        :class="rollClass"
         v-tooltip.top="
           'Roll For Me: ' +
           String(roll) +
           '\nInitiative value will be reset to 0 if set to true.'
         "
-        @click.stop="updateRollForMe"
+        @click="updateRoll"
       >
         <ClickIcon></ClickIcon>
       </Button>
     </div>
   </div>
-  <div class="p-grid p-field">
+  <div class="p-grid p-field m-2">
     <div class="p-inputgroup p-col input-value">
       <Button
         icon="pi pi-info-circle"
@@ -72,7 +74,7 @@
   </div>
   <Button
     label="Save"
-    class="pi-button-primary"
+    class="pi-button-primary m-2"
     @click.prevent="
       (e) => {
         addCharacter(e, data, roll, npc);
@@ -82,7 +84,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive } from "vue";
+import { defineComponent, ref, reactive, computed } from "vue";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Button from "primevue/button";
@@ -105,6 +107,12 @@ export default defineComponent({
     });
     let roll = ref(false);
     let npc = ref(false);
+    const rollClass = computed(() =>
+      roll.value ? "p-button-success" : "p-button-help"
+    );
+    const npcClass = computed(() =>
+      npc.value ? "p-button-success" : "p-button-help"
+    );
 
     function handleChange(e: any, ObjectType: InitiativeObjectEnums) {
       serverLogger(
@@ -124,62 +132,25 @@ export default defineComponent({
           break;
       }
     }
-    function updateRollForMe() {
-      serverLogger(
-        LoggingTypes.debug,
-        `changing updateroll for me ${roll.value}`,
-        ComponentEnums.ADDINITIATIVE
-      );
-      let rollElement = document.getElementById("roll");
-      if (rollElement !== null) {
-        if (rollElement.classList.contains("p-button-success")) {
-          rollElement.classList.remove("p-button-success");
-          rollElement.classList.add("p-button-help");
-          roll.value = false;
-        } else {
-          rollElement.classList.add("p-button-success");
-          rollElement.classList.remove("p-button-help");
-          roll.value = true;
-        }
-      }
-      serverLogger(
-        LoggingTypes.debug,
-        `changing updateroll for me ${roll.value}`,
-        ComponentEnums.ADDINITIATIVE
-      );
+
+    function updateRoll() {
+      roll.value = !roll.value;
     }
+
     function updateNPC() {
-      serverLogger(
-        LoggingTypes.debug,
-        `changing isNpc ${npc.value}`,
-        ComponentEnums.ADDINITIATIVE
-      );
-      let NPCElement = document.getElementById("NPC");
-      if (NPCElement !== null) {
-        if (NPCElement.classList.contains("p-button-success")) {
-          NPCElement.classList.remove("p-button-success");
-          NPCElement.classList.add("p-button-help");
-          npc.value = false;
-        } else {
-          NPCElement.classList.add("p-button-success");
-          NPCElement.classList.remove("p-button-help");
-          npc.value = true;
-        }
-      }
-      serverLogger(
-        LoggingTypes.debug,
-        `changing isNpc ${npc.value}`,
-        ComponentEnums.ADDINITIATIVE
-      );
+      npc.value = !npc.value;
     }
+
     return {
-      updateRollForMe,
       roll,
       data,
       InitiativeObjectEnums,
       handleChange,
       npc,
       updateNPC,
+      rollClass,
+      npcClass,
+      updateRoll,
     };
   },
 });

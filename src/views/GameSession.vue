@@ -1,6 +1,6 @@
 <template>
   <SocketReceiver />
-  <Toolbar>
+  <Toolbar class="shadow-8">
     <template #start>
       <Toast />
       <ConfirmPopup></ConfirmPopup>
@@ -26,7 +26,7 @@
     </template>
   </Toolbar>
 
-  <div class="flex flex-row justify-content-evenly">
+  <div class="session-large flex-row flex-wrap justify-content-evenly">
     <!-- Initiative List -->
     <div class="flex flex-column column-container md:col-4">
       <h1>Initiative List</h1>
@@ -38,6 +38,20 @@
       <h1>Spell List</h1>
       <SpellState></SpellState>
     </div>
+  </div>
+  <div class="session-small">
+    <TabView>
+      <TabPanel header="Initiative">
+        <div class="flex flex-column column-container">
+          <InitiativeState />
+        </div>
+      </TabPanel>
+      <TabPanel header="Spells">
+        <div class="flex flex-column column-container">
+          <SpellState />
+        </div>
+      </TabPanel>
+    </TabView>
   </div>
 </template>
 
@@ -58,6 +72,8 @@ import ConfirmPopup from "primevue/confirmpopup";
 import Toast from "primevue/toast";
 import serverLogger from "../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../Interfaces/LoggingTypes";
+import TabView from "primevue/tabview";
+import TabPanel from "primevue/tabpanel";
 
 // css to make columns instead of rows for each item (init, spell, info)
 export default defineComponent({
@@ -71,6 +87,8 @@ export default defineComponent({
     SocketReceiver,
     ConfirmPopup,
     Toast,
+    TabView,
+    TabPanel,
   },
   setup() {
     const route = useRoute();
@@ -95,7 +113,7 @@ export default defineComponent({
         `Failed to inject store`,
         ComponentEnums.GAMESESSION
       );
-      throw new Error('Failed to inject "updateScore"');
+      throw new Error("Failed to inject store");
     }
     let op = ref(null);
 
@@ -189,7 +207,7 @@ export default defineComponent({
 
 <style>
 .column-container {
-  width: 30%;
+  width: fit-content;
 }
 .p-tooltip-text {
   font-size: 0.8em;
@@ -215,5 +233,21 @@ export default defineComponent({
   padding-left: 0.1em !important;
   padding-right: 0.2em !important;
   margin: 0 !important;
+}
+.session-large {
+  display: flex;
+}
+.session-small {
+  display: none;
+}
+@media only screen and (max-width: 480px) {
+  .session-large {
+    display: none;
+  }
+  .session-small {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
 }
 </style>

@@ -1,8 +1,8 @@
 <template>
-  <div v-if="!loading">
+  <div v-if="!loading" class="w-auto">
     <Toast />
     <ConfirmPopup></ConfirmPopup>
-    <ToolBar>
+    <ToolBar class="shadow-8">
       <template #start>
         <Button
           type="button"
@@ -23,58 +23,60 @@
         </OverlayPanel>
       </template>
     </ToolBar>
-    <div class="spell-items">
-      <h2>Spells</h2>
-      <DataTable :value="spells" :paginator="true" :rows="10">
-        <Column header="Spell Name">
-          <template #body="record">
-            <div>{{ record.data.effectName }}</div>
-          </template>
-        </Column>
-        <Column header="Duration">
-          <template #body="record">
-            <div>
-              {{ `${record.data.durationTime} ${record.data.durationType}` }}
-            </div>
-          </template>
-        </Column>
-        <Column header="Targets">
-          <template #body="record">
-            <Button
-              type="button"
-              label="Targets"
-              @click="togglePickList"
-              class="p-button-sm"
+    <DataTable
+      :value="spells"
+      :paginator="true"
+      :rows="10"
+      class="shadow-8"
+      responsiveLayout="scroll"
+    >
+      <Column header="Spell Name">
+        <template #body="record">
+          <div>{{ record.data.effectName }}</div>
+        </template>
+      </Column>
+      <Column header="Duration">
+        <template #body="record">
+          <div>
+            {{ `${record.data.durationTime} ${record.data.durationType}` }}
+          </div>
+        </template>
+      </Column>
+      <Column header="Targets" field="characterIds">
+        <template #body="{ index }">
+          <Button
+            type="button"
+            label="Targets"
+            @click="(e) => togglePickList(e, index)"
+            class="p-button-sm"
+          />
+          <OverlayPanel
+            ref="pickListRef"
+            :showCloseIcon="true"
+            :dismissable="true"
+          >
+            <SpellRecord
+              :characterIds="pickListTargets"
+              :index="pickListIndex"
             />
-            <OverlayPanel
-              ref="pickListRef"
-              :showCloseIcon="true"
-              :dismissable="true"
-            >
-              <SpellRecord
-                :spell="store.store.spells[record.index]"
-                :index="record.index"
-              >
-              </SpellRecord>
-            </OverlayPanel>
-          </template>
-        </Column>
-        <Column header="Edit/Delete">
-          <template #body="{ data, index }">
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-rounded p-button-success mr-2"
-              @click="modalOpen(data, index)"
-            />
-            <Button
-              icon="pi pi-trash"
-              class="p-button-rounded p-button-danger"
-              @click="() => store.removeSpell(index, data.id, true)"
-            />
-          </template>
-        </Column>
-      </DataTable>
-    </div>
+          </OverlayPanel>
+        </template>
+      </Column>
+      <Column header="Edit/Delete">
+        <template #body="{ data, index }">
+          <Button
+            icon="pi pi-pencil"
+            class="p-button-rounded p-button-success mr-2"
+            @click="modalOpen(data, index)"
+          />
+          <Button
+            icon="pi pi-trash"
+            class="p-button-rounded p-button-danger"
+            @click="() => store.removeSpell(index, data.id, true)"
+          />
+        </template>
+      </Column>
+    </DataTable>
     <Dialog
       v-model:visible="editSpell"
       :style="{ width: '450px' }"
@@ -98,14 +100,15 @@ import {
   inject,
   ref,
   onMounted,
-  reactive,
-  watch,
   onBeforeUnmount,
   computed,
 } from "vue";
 import AddSpell from "./AddSpell.vue";
 import { IStore } from "../../../data/types";
-import { SpellObject } from "../../../Interfaces/initiative";
+import {
+  CharacterStatusFirestore,
+  SpellObject,
+} from "../../../Interfaces/initiative";
 import Button from "primevue/button";
 import OverlayPanel from "primevue/overlaypanel";
 import ToolBar from "primevue/toolbar";
@@ -146,6 +149,8 @@ export default defineComponent({
     const confirm = useConfirm();
     const toast = useToast();
     const editSpell = ref(false);
+    const pickListTargets = ref();
+    const pickListIndex = ref(0);
     const recordValue = ref<SpellObject>({} as SpellObject);
     const indexValue = ref(0);
 
@@ -183,7 +188,9 @@ export default defineComponent({
       (op.value as any).toggle(event);
     }
 
-    function togglePickList(event: any) {
+    function togglePickList(event: any, index: number) {
+      pickListTargets.value = spells.value[index].characterIds;
+      pickListIndex.value = index;
       (pickListRef.value as any).toggle(event);
     }
 
@@ -251,6 +258,8 @@ export default defineComponent({
       editSpell,
       recordValue,
       indexValue,
+      pickListTargets,
+      pickListIndex,
     };
   },
 });

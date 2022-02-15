@@ -4,15 +4,15 @@
     @row-reorder="reOrderInitiative"
     :paginator="true"
     :rows="10"
-    :rowClass="rowClass"
-    class="p-datatable-sm"
+    class="shadow-8"
+    responsiveLayout="scroll"
   >
     <Column
       :rowReorder="true"
       headerStyle="width: 3rem"
       :reorderableColumn="false"
     ></Column>
-    <Column header="Current Turn" field="isCurrent">
+    <Column header="Current Turn" field="isCurrent" class="column-large-screen">
       <template #body="{ data, field, index }">
         <Button
           v-if="data[field]"
@@ -33,12 +33,30 @@
         {{ data[field] }}
       </template>
     </Column>
-    <Column header="Edit/Delete">
+    <Column header="Character Actions" class="column-small-screen">
+      <template #body="{ data, index }">
+        <CharacterActions
+          :characterData="data"
+          :index="index"
+          :modalOpen="modalOpen"
+        ></CharacterActions>
+      </template>
+    </Column>
+    <Column
+      header="Spell Effects"
+      field="statusEffects"
+      class="column-large-screen"
+    >
+      <template #body="{ data, field }">
+        <SpellEffectIcon :statusEffects="data[field]"></SpellEffectIcon>
+      </template>
+    </Column>
+    <Column header="Edit/Delete" class="column-large-screen">
       <template #body="{ data, index }">
         <Button
           icon="pi pi-pencil"
           class="p-button-rounded p-button-success mr-2"
-          @click="modalOpen(data, index)"
+          @click="modalOpen(data)"
         />
         <Button
           icon="pi pi-trash"
@@ -55,31 +73,28 @@
     header="Edit Initiative"
     :modal="true"
   >
-    <InitRecord :initiative="recordValue" :index="indexValue"></InitRecord>
+    <InitiativeData
+      :initiativeRecord="recordValue"
+      :saveCharacter="modalClose"
+    ></InitiativeData>
   </Dialog>
 </template>
 
 <script lang="ts">
-import {
-  defineComponent,
-  inject,
-  watch,
-  reactive,
-  ref,
-  PropType,
-  computed,
-} from "vue";
+import { defineComponent, inject, ref, computed } from "vue";
 import { InitiativeObject } from "../../../Interfaces/initiative";
 import { IStore } from "../../../data/types";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
-import { InitiativeObjectEnums } from "../../../Interfaces/ContextEnums";
-import InputText from "primevue/inputtext";
-import InitRecord from "./InitRecord.vue";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
+import SpellEffectIcon from "./SpellEffectIcon.vue";
+import InitiativeData from "./InitiativeData.vue";
+import { updateRecordInitiative } from "../../../data/emitFunctions";
+import { useToast } from "primevue/usetoast";
+import CharacterActions from "./CharacterActions.vue";
 //  editMode="cell"
 //     @cell-edit-complete="handleChange"
 //  InitRecord,
@@ -91,133 +106,61 @@ export default defineComponent({
     Column,
     Button,
     Dialog,
-    InitRecord,
+    SpellEffectIcon,
+    InitiativeData,
+    CharacterActions,
   },
-  props: {
-    initiativeList: {
-      type: Object as PropType<InitiativeObject[]>,
-      required: true,
-    },
-  },
-  setup(props) {
+  setup() {
     const store = inject<IStore>("store");
+    const toast = useToast();
+    if (store === undefined) {
+      serverLogger(
+        LoggingTypes.alert,
+        `Failed to inject store`,
+        ComponentEnums.INITIATIVESTATE
+      );
+      throw new Error("Failed to inject store");
+    }
     const editInit = ref(false);
     const recordValue = ref<InitiativeObject>({} as InitiativeObject);
-    const reactiveList = computed(() => props.initiativeList);
-    const indexValue = ref(0);
-    let op = ref(null);
-
-    function toggle(event: any) {
-      (op.value as any).toggle(event);
-    }
+    const reactiveList = computed(() => store?.getInitiative());
     serverLogger(
       LoggingTypes.debug,
       `sortable list component created`,
       ComponentEnums.SORTABLELIST
     );
-    if (store === undefined) {
-      serverLogger(
-        LoggingTypes.alert,
-        `Failed to inject store`,
-        ComponentEnums.SORTABLELIST
-      );
-      throw new Error("Failed to inject store");
-    }
 
-    function handleTextChange(event: any) {
-      let { data, newValue, field, index } = event;
-
-      switch (field) {
-        case "characterName":
-          store?.updateCharacterItem(
-            InitiativeObjectEnums.characterName,
-            newValue,
-            index,
-            true,
-            data.id
-          );
-          break;
-        case InitiativeObjectEnums.initiative:
-          break;
-        case InitiativeObjectEnums.initiativeModifier:
-          break;
-      }
-    }
-
-    function handleNumberChange(
-      e: number | undefined,
-      valueName: string,
-      index: number
-    ) {
-      if (e !== undefined) {
-        serverLogger(
-          LoggingTypes.info,
-          `updating character info`,
-          ComponentEnums.SORTABLELIST
-        );
-        switch (valueName) {
-          case InitiativeObjectEnums.initiative:
-            store?.updateCharacterItem(
-              InitiativeObjectEnums.initiative,
-              Number(e),
-              index,
-              true,
-              reactiveList.value[index].id
-            );
-            serverLogger(
-              LoggingTypes.debug,
-              `${valueName} updated`,
-              ComponentEnums.SORTABLELIST,
-              reactiveList.value[index].id
-            );
-            break;
-          case InitiativeObjectEnums.initiativeModifier:
-            store?.updateCharacterItem(
-              InitiativeObjectEnums.initiativeModifier,
-              Number(e),
-              index,
-              true,
-              reactiveList.value[index].id
-            );
-            serverLogger(
-              LoggingTypes.debug,
-              `${valueName} updated`,
-              ComponentEnums.SORTABLELIST,
-              reactiveList.value[index].id
-            );
-            break;
-        }
-      }
-    }
-
-    function modalOpen(data: InitiativeObject, index: number) {
+    function modalOpen(data: InitiativeObject) {
       recordValue.value = data;
-      indexValue.value = index;
       editInit.value = true;
+    }
+
+    function modalClose(e: any, data: InitiativeObject) {
+      editInit.value = false;
+      if (store) {
+        store.updateCharacterRecord(data, false);
+        updateRecordInitiative(data, store.store.sessionId);
+        toast.add({
+          severity: "info",
+          summary: "Character Saved",
+          detail: `${data.characterName} successfully saved.`,
+          life: 3000,
+        });
+      }
     }
 
     function reOrderInitiative(e: any) {
       store?.onDrop(e);
     }
 
-    const rowClass = (data: InitiativeObject) => {
-      return data.isCurrent ? "current" : "none";
-    };
-
     return {
       store,
       reactiveList,
       reOrderInitiative,
-      handleTextChange,
-      handleNumberChange,
-      op,
-      toggle,
-      InitiativeObjectEnums,
       editInit,
       modalOpen,
       recordValue,
-      indexValue,
-      rowClass,
+      modalClose,
     };
   },
 });
@@ -246,5 +189,23 @@ export default defineComponent({
 }
 .p-inputnumber-input .p-inputnumber-input {
   width: 50% !important;
+}
+.button-large-screen {
+  display: inline;
+}
+:deep(.column-small-screen) {
+  display: none;
+}
+@media only screen and (max-width: 480px) {
+  :deep(.column-large-screen) {
+    display: none;
+  }
+  :deep(.column-small-screen) {
+    display: flex;
+    justify-content: center;
+  }
+  .button-large-screen {
+    display: none;
+  }
 }
 </style>

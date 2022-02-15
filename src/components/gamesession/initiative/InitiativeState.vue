@@ -1,8 +1,8 @@
 <template>
   <Toast />
   <div v-if="!loading">
-    <div>
-      <ToolBar>
+    <div class="w-auto">
+      <ToolBar class="shadow-8 button-toolbar-lg">
         <template #start>
           <div v-if="!isSorted">
             <Button
@@ -40,16 +40,40 @@
           <Button
             type="button"
             label="Add Initiative"
-            @click="toggle"
+            @click="toggleAdd"
             class="p-button-sm"
           />
           <OverlayPanel ref="op" :showCloseIcon="true" :dismissable="true">
-            <AddInitiative :addCharacter="addCharacter" />
+            <InitiativeData :saveCharacter="addCharacter" />
           </OverlayPanel>
         </template>
       </ToolBar>
-      <SortableList :initiativeList="store.store.initiativeList">
-      </SortableList>
+      <ToolBar class="shadow-8 button-toolbar-sm">
+        <template #start>
+          <Button icon="pi pi-bars" @click="toggleHam" />
+          <TieredMenu
+            id="overlay_tmenu"
+            ref="hamRef"
+            :model="sortedMenuItems"
+            :popup="true"
+            v-if="isSorted"
+          />
+          <TieredMenu
+            id="overlay_tmenu"
+            ref="hamRef"
+            :model="unsortedMenuItems"
+            :popup="true"
+            v-else
+          />
+        </template>
+        <template #end>
+          <Button icon="pi pi-plus" @click="toggleAdd"></Button>
+          <OverlayPanel ref="op" :showCloseIcon="true" :dismissable="true">
+            <InitiativeData :saveCharacter="addCharacter" />
+          </OverlayPanel>
+        </template>
+      </ToolBar>
+      <SortableList></SortableList>
     </div>
   </div>
   <div class="record" v-else>
@@ -59,13 +83,11 @@
 
 <script lang="ts">
 import { defineComponent, onMounted, ref, inject, watch, computed } from "vue";
-import InitiativeRecordHeader from "./InitiativeRecordHeader.vue";
 import OverlayPanel from "primevue/overlaypanel";
-import AddInitiative from "./AddInitiative.vue";
 import ToolBar from "primevue/toolbar";
 import Button from "primevue/button";
 import Skeleton from "primevue/skeleton";
-import { IStore, Character } from "../../../data/types";
+import { IStore } from "../../../data/types";
 import SortableList from "./SortableList.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -73,11 +95,13 @@ import ConfirmPopup from "primevue/confirmpopup";
 import Toast from "primevue/toast";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
+import InitiativeData from "./InitiativeData.vue";
+import { InitiativeObject } from "@/src/Interfaces/initiative";
+import TieredMenu from "primevue/tieredmenu";
 
 export default defineComponent({
   name: "InitiativeState",
   components: {
-    AddInitiative,
     OverlayPanel,
     ToolBar,
     Button,
@@ -85,6 +109,8 @@ export default defineComponent({
     SortableList,
     Toast,
     ConfirmPopup,
+    InitiativeData,
+    TieredMenu,
   },
   setup() {
     const store = inject<IStore>("store");
@@ -99,7 +125,8 @@ export default defineComponent({
     });
     const toast = useToast();
     const confirm = useConfirm();
-    let op = ref(null);
+    const op = ref(null);
+    const hamRef = ref(null);
     if (store === undefined) {
       serverLogger(
         LoggingTypes.alert,
@@ -108,6 +135,7 @@ export default defineComponent({
       );
       throw new Error("Failed to inject store");
     }
+    const initiativeList = computed(() => store.getInitiative());
 
     onMounted(() => {
       loading.value = true;
@@ -127,18 +155,17 @@ export default defineComponent({
       }, 500);
     });
 
-    function toggle(event: any) {
+    function toggleAdd(event: any) {
       (op.value as any).toggle(event);
     }
 
-    function addCharacter(
-      e: any,
-      data: Character,
-      roll: boolean,
-      npc: boolean
-    ) {
+    function toggleHam(event: any) {
+      (hamRef.value as any).toggle(event);
+    }
+
+    function addCharacter(e: any, data: InitiativeObject) {
       // toggle add menu off
-      toggle(e);
+      toggleAdd(e);
       serverLogger(
         LoggingTypes.info,
         `adding toast and adding character`,
@@ -150,8 +177,19 @@ export default defineComponent({
         detail: `Adding ${data.characterName} to the list.`,
         life: 3000,
       });
+
+      if (store?.getSorted() === true) {
+        store?.updateSorted(false);
+        toast.add({
+          severity: "warn",
+          summary: "Reset",
+          detail:
+            "Sort has been reset due to added character. Click Round Start to sort.",
+          life: 3000,
+        });
+      }
       try {
-        store?.addCharacter(data, roll, npc);
+        store?.addCharacter(data);
         serverLogger(
           LoggingTypes.info,
           `adding toast and adding character`,
@@ -202,29 +240,91 @@ export default defineComponent({
         },
       });
     };
+
+    const sortedMenuItems = [
+      {
+        label: "Sort",
+        icon: "pi pi-sync",
+        command: () => {
+          store.reSort();
+        },
+      },
+      {
+        label: "Next",
+        icon: "pi pi-angle-double-right",
+        command: () => {
+          store.nextTurn();
+        },
+      },
+      {
+        label: "Previous",
+        icon: "pi pi-angle-double-left",
+
+        command: () => {
+          store.previousTurn();
+        },
+      },
+      {
+        label: "Reset Initiative",
+        icon: "pi pi-trash",
+        command: (e: any) => {
+          confirm1(e);
+        },
+      },
+    ];
+
+    const unsortedMenuItems = [
+      {
+        label: "Round Start",
+        icon: "pi pi-caret-right",
+        command: () => {
+          store.roundStart();
+        },
+      },
+    ];
     return {
       loading,
       store,
-      toggle,
+      toggleAdd,
       op,
       addCharacter,
       confirm1,
       isSorted,
+      initiativeList,
+      sortedMenuItems,
+      unsortedMenuItems,
+      hamRef,
+      toggleHam,
     };
   },
 });
 </script>
 
-<style scoped>
+<style>
 .record {
   width: 100%;
   border: 2px solid black;
 }
-.current {
-  box-shadow: inset 0 1px 4px 0 rgba(0, 255, 21, 0.596);
-}
 .btn-cage {
   display: flex;
   justify-content: space-between;
+}
+
+.p-button-sm {
+  font-size: 0.7em !important;
+}
+.button-toolbar-lg {
+  display: flex;
+}
+.button-toolbar-sm {
+  display: none;
+}
+@media only screen and (max-width: 480px) {
+  .button-toolbar-lg {
+    display: none;
+  }
+  .button-toolbar-sm {
+    display: flex;
+  }
 }
 </style>

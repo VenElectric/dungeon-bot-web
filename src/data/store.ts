@@ -23,6 +23,7 @@ import {
 } from "../Utils/TypeChecking";
 import serverLogger from "../Utils/LoggingClass";
 import { StoreEnums, LoggingTypes } from "../Interfaces/LoggingTypes";
+import * as emits from "./emitFunctions";
 
 const socketString = "https://dungeon-bot-server.herokuapp.com";
 
@@ -212,6 +213,7 @@ const getInitialSpells = (): void => {
   );
 };
 
+// remove alltofalse to where it's needed
 const updateCharacterRecord = (
   initiative: InitiativeObject,
   isReset: boolean
@@ -300,7 +302,7 @@ const updateCharacterItem = (
   }
 };
 
-const addCharacter = (data: Character, roll: boolean, npc: boolean): void => {
+const addCharacter = (data: InitiativeObject): void => {
   serverLogger(
     LoggingTypes.debug,
     `changing all isCurrent to false`,
@@ -308,52 +310,26 @@ const addCharacter = (data: Character, roll: boolean, npc: boolean): void => {
   );
   alltoFalse();
   sessionData.isSorted = false;
-  const characterId = String(uuidv4());
-  let diceroll;
-  if (roll) {
-    const newRoll = new DiceRoll(`d20+${String(data.initiativeModifier)}`);
-    diceroll = Number(newRoll.total);
-    serverLogger(
-      LoggingTypes.debug,
-      `rolling for player Total: ${diceroll}`,
-      StoreEnums.addCharacter,
-      characterId
-    );
-  } else {
-    diceroll = data.initiative;
-  }
-
-  // construct the object
-  const newData = {
-    id: characterId,
-    characterName: data.characterName,
-    initiative: Number(diceroll),
-    initiativeModifier: Number(data.initiativeModifier),
-    isCurrent: false,
-    roundOrder: 0,
-    isNpc: npc,
-    statusEffects: [],
-  };
 
   serverLogger(
     LoggingTypes.debug,
     `adding initiative to the store`,
     StoreEnums.addCharacter,
-    characterId
+    data.id
   );
 
-  sessionData.initiativeList.push(newData);
+  sessionData.initiativeList.push(data);
   if (sessionData.spells.length > 0) {
     serverLogger(
       LoggingTypes.debug,
       `adding new character to spells characterIds lists`,
       StoreEnums.addCharacter,
-      characterId
+      data.id
     );
     sessionData.spells.forEach((spell: SpellObject) => {
       spell.characterIds.source.push({
-        characterName: newData.characterName,
-        characterId: newData.id,
+        characterName: data.characterName,
+        characterId: data.id,
       });
     });
 
@@ -371,34 +347,39 @@ const addCharacter = (data: Character, roll: boolean, npc: boolean): void => {
     LoggingTypes.debug,
     `emitting new character`,
     StoreEnums.addCharacter,
-    characterId
+    data.id
   );
   sessionData.socket.emit(EmitTypes.CREATE_NEW_INITIATIVE, {
-    payload: newData,
+    payload: data,
     sessionId: sessionData.sessionId,
   });
 };
 
-const reRoll = (index: number): void => {
-  const modifier = sessionData.initiativeList[index].initiativeModifier;
-  const newRoll = new DiceRoll(`d20+${String(modifier)}`);
-  serverLogger(
-    LoggingTypes.debug,
-    `reroll complete, updating character`,
-    StoreEnums.reRoll
-  );
-  updateCharacterItem(
-    InitiativeObjectEnums.initiative,
-    newRoll.total,
-    index,
-    true,
-    sessionData.initiativeList[index].id
-  );
-  serverLogger(
-    LoggingTypes.info,
-    `update character complete`,
-    StoreEnums.reRoll
-  );
+// const reRoll = (index: number): void => {
+//   const modifier = sessionData.initiativeList[index].initiativeModifier;
+//   const newRoll = new DiceRoll(`d20+${String(modifier)}`);
+//   serverLogger(
+//     LoggingTypes.debug,
+//     `reroll complete, updating character`,
+//     StoreEnums.reRoll
+//   );
+//   updateCharacterItem(
+//     InitiativeObjectEnums.initiative,
+//     newRoll.total,
+//     index,
+//     true,
+//     sessionData.initiativeList[index].id
+//   );
+//   serverLogger(
+//     LoggingTypes.info,
+//     `update character complete`,
+//     StoreEnums.reRoll
+//   );
+// };
+
+const reRoll = (): number => {
+  const newRoll = new DiceRoll(`d20`);
+  return Number(newRoll.total);
 };
 
 const removeCharacter = (index: number, id: string, emit: boolean): void => {
@@ -649,6 +630,7 @@ const dragEnter = (evt: DragEvent): void => {
 };
 
 const onDrop = (evt: any): void => {
+  if (!sessionData.isSorted) return;
   const toMove = { ...sessionData.initiativeList[evt.dragIndex] };
   if (toMove) {
     sessionData.initiativeList.splice(evt.dragIndex, 1);

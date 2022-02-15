@@ -50,7 +50,7 @@ export interface IStore {
     initiative: InitiativeObject,
     isReset: boolean
   ) => void;
-  addCharacter: (data: Character, roll: boolean, npc: boolean) => void;
+  addCharacter: (data: InitiativeObject) => void;
   removeCharacter: (index: number, id: string, emit: boolean) => void;
   getInitialSpells: () => void;
   addSpell: (data: any) => void;
@@ -99,7 +99,7 @@ export interface IStore {
   removeSpell: (index: number, id: string, emit: boolean) => void;
   spellsDoubleArray: (payload: CharacterStatusFirestore) => CharacterStatus[][];
   resetAll: (emit: boolean) => void;
-  reRoll: (index: number) => void;
+  reRoll: () => number;
   alltoFalse: () => void;
   updateSorted: (isSorted: boolean) => void;
   resetSpells: (emit: boolean) => void;
