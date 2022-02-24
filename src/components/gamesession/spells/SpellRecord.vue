@@ -8,6 +8,7 @@
     @move-to-source="(e) => store.changeOneCharacterToSource(e, index)"
     @move-to-target="(e) => store.changeOneCharacterToTarget(e, index)"
     :responsive="true"
+    breakpoint="460px"
     style="font-size: 0.8em"
   >
     <template #sourceheader> Characters Not Affected </template>

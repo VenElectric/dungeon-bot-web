@@ -70,6 +70,7 @@ export enum CollectionTypes {
   INITIATIVE = "initiative",
   SPELLS = "spells",
   LOGGING = "logging",
+  ROLLS = "rolls",
 }
 
 export type PayloadType =

@@ -46,7 +46,7 @@
       <Button
         icon="pi pi-replay"
         label="Re-Roll Initiative"
-        @click="() => store.reRoll(index)"
+        @click="() => store.reRoll()"
       />
     </template>
   </Card>

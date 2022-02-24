@@ -6,23 +6,25 @@
       <ConfirmPopup></ConfirmPopup>
       <Button
         label="Discord: Spells"
-        class="p-button p-button-info"
+        class="p-button p-button-info p-button-sm"
         @click="spellMessage"
       />
       <Button
         label="Discord: Initiative"
-        class="p-button p-button-info"
+        class="p-button p-button-info p-button-sm"
         @click="initiativeMessage"
       />
       <Button
         label="Clear Session"
         v-tooltip.top="'This will clear all Spells and Initiative'"
         @click="(e) => confirm1(e)"
-        class="p-button p-button-info"
+        class="p-button p-button-info p-button-sm"
       />
-    </template>
-    <template #end>
-      <Message class="message-container" v-if="display">{{ message }}</Message>
+      <Button
+        label="Custom Rolls"
+        @click="modalOpen"
+        class="p-button p-button-info p-button-sm"
+      />
     </template>
   </Toolbar>
 
@@ -39,7 +41,7 @@
       <SpellState></SpellState>
     </div>
   </div>
-  <div class="session-small">
+  <div class="session-small mt-4">
     <TabView>
       <TabPanel header="Initiative">
         <div class="flex flex-column column-container">
@@ -53,6 +55,13 @@
       </TabPanel>
     </TabView>
   </div>
+  <Dialog
+    v-model:visible="display"
+    :style="{ width: '450px' }"
+    header="Custom Rolls"
+    :modal="true"
+    ><CustomRoll></CustomRoll
+  ></Dialog>
 </template>
 
 <script lang="ts">
@@ -64,7 +73,6 @@ import Button from "primevue/button";
 import { IStore } from "../data/types";
 import SpellState from "../components/gamesession/spells/SpellState.vue";
 import { CollectionTypes } from "../Interfaces/ContextEnums";
-import Message from "primevue/message";
 import SocketReceiver from "../components/gamesession/SocketReceiver.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -74,6 +82,8 @@ import serverLogger from "../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../Interfaces/LoggingTypes";
 import TabView from "primevue/tabview";
 import TabPanel from "primevue/tabpanel";
+import Dialog from "primevue/dialog";
+import CustomRoll from "../components/gamesession/CustomRoll.vue";
 
 // css to make columns instead of rows for each item (init, spell, info)
 export default defineComponent({
@@ -83,12 +93,13 @@ export default defineComponent({
     Button,
     InitiativeState,
     SpellState,
-    Message,
     SocketReceiver,
     ConfirmPopup,
     Toast,
     TabView,
     TabPanel,
+    Dialog,
+    CustomRoll,
   },
   setup() {
     const route = useRoute();
@@ -146,6 +157,10 @@ export default defineComponent({
       );
     }
 
+    const modalOpen = () => {
+      display.value = true;
+    };
+
     const confirm1 = (event: any) => {
       confirm.require({
         target: event.currentTarget,
@@ -184,6 +199,7 @@ export default defineComponent({
     onMounted(() => {
       if (paramsId !== undefined) {
         store.roomSetup();
+        store.getInitialRolls();
         serverLogger(
           LoggingTypes.info,
           `Onmounted, sending emit to create room`,
@@ -193,13 +209,11 @@ export default defineComponent({
     });
 
     return {
-      store,
-      CollectionTypes,
       spellMessage,
       initiativeMessage,
-      display,
-      message,
       confirm1,
+      display,
+      modalOpen,
     };
   },
 });
@@ -235,17 +249,17 @@ export default defineComponent({
   margin: 0 !important;
 }
 .session-large {
-  display: flex;
+  display: flex !important;
 }
 .session-small {
-  display: none;
+  display: none !important;
 }
 @media only screen and (max-width: 480px) {
   .session-large {
-    display: none;
+    display: none !important;
   }
   .session-small {
-    display: flex;
+    display: flex !important;
     justify-content: center;
     flex-wrap: wrap;
   }

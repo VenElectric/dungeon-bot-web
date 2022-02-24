@@ -6,7 +6,8 @@
     class="pi pi-exclamation-triangle"
   >
     <OverlayPanel ref="overLay" class="px-3">
-      <h3 class="mt-0">Effects</h3>
+      <EffectContainer :statusEffects="statusEffects"></EffectContainer>
+      <!-- <h3 class="mt-0">Effects</h3>
       <div
         v-if="lengthNumber > 0"
         class="flex flex-column align-content-center"
@@ -15,7 +16,7 @@
           {{ status.spellName }}
         </em>
       </div>
-      <div v-else>No Effects to Display</div>
+      <div v-else>No Effects to Display</div> -->
     </OverlayPanel>
   </em>
 </template>
@@ -24,10 +25,11 @@
 import { computed, defineComponent, PropType, ref } from "vue";
 import { StatusEffect } from "../../../Interfaces/initiative";
 import OverlayPanel from "primevue/overlaypanel";
+import EffectContainer from "./EffectContainer.vue";
 
 export default defineComponent({
   name: "SpellEffectIcon",
-  components: { OverlayPanel },
+  components: { OverlayPanel, EffectContainer },
   props: {
     statusEffects: { type: Object as PropType<StatusEffect[]>, required: true },
   },

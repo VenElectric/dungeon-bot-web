@@ -24,6 +24,7 @@ import {
 import serverLogger from "../Utils/LoggingClass";
 import { StoreEnums, LoggingTypes } from "../Interfaces/LoggingTypes";
 import * as emits from "./emitFunctions";
+import { RollObject } from "../Interfaces/Rolls";
 
 const socketString = "https://dungeon-bot-server.herokuapp.com";
 
@@ -32,7 +33,8 @@ const sessionData = reactive({
   isSorted: false,
   spells: [] as SpellObject[],
   sessionId: "",
-  socket: io("localhost:8000"),
+  socket: io("https://dungeon-bot-server.herokuapp.com"),
+  rolls: [] as RollObject[],
 });
 
 const spellsDoubleArray = (
@@ -173,6 +175,70 @@ const getInitial = (): void => {
       );
     }
   );
+};
+
+const getInitialRolls = (): void => {
+  serverLogger(
+    LoggingTypes.info,
+    `first fetch initiative`,
+    StoreEnums.getInitial
+  );
+  sessionData.socket.emit(
+    EmitTypes.GET_INITIAL_ROLLS,
+    sessionData.sessionId,
+    (query: RollObject[]) => {
+      sessionData.rolls = query;
+      console.log(query);
+      serverLogger(
+        LoggingTypes.info,
+        `initiative store updated`,
+        StoreEnums.getInitial
+      );
+    }
+  );
+};
+
+const addRoll = (data: RollObject): void => {
+  sessionData.rolls.push(data);
+};
+
+const emitAddRoll = (data: RollObject): void => {
+  sessionData.socket.emit(EmitTypes.CREATE_NEW_ROLL, {
+    rollData: data,
+    sessionId: sessionData.sessionId,
+  });
+  serverLogger(LoggingTypes.debug, `Adding roll ${data.id}`, "emitAddRoll");
+};
+
+const updateRoll = (data: RollObject, index: number): void => {
+  sessionData.rolls[index] = data;
+};
+
+const emitUpdateRoll = (data: RollObject): void => {
+  sessionData.socket.emit(EmitTypes.UPDATE_ROLL_RECORD, {
+    rollObject: data,
+    sessionId: sessionData.sessionId,
+  });
+};
+
+const deleteRoll = (id: string, index: number): void => {
+  sessionData.rolls.splice(index, 1);
+};
+
+const emitDeleteRoll = (id: string): void => {
+  sessionData.socket.emit(EmitTypes.DELETE_ONE_ROLL, {
+    docId: id,
+    sessionId: sessionData.sessionId,
+  });
+};
+
+const getRolls = (): RollObject[] => {
+  return sessionData.rolls;
+};
+
+const rollDice = (diceRoll: string): DiceRoll => {
+  const newRoll = new DiceRoll(diceRoll);
+  return newRoll;
 };
 
 const getInitialSpells = (): void => {
@@ -659,6 +725,74 @@ const onDrop = (evt: any): void => {
   }
 };
 
+const moveUp = (index: number): void => {
+  console.log(index);
+  console.log(sessionData.isSorted);
+  if (index === 0) {
+    console.log("===");
+    return;
+  }
+  if (!sessionData.isSorted) return;
+  const toMove = { ...sessionData.initiativeList[index] };
+  sessionData.initiativeList.splice(index, 1);
+  sessionData.initiativeList.splice(index - 1, 0, toMove);
+  sessionData.initiativeList.forEach((item: InitiativeObject, index) => {
+    sessionData.initiativeList[index].roundOrder = index + 1;
+  });
+  serverLogger(
+    LoggingTypes.debug,
+    `drop complete, initiativeList order updating`,
+    StoreEnums.onDrop
+  );
+  setTimeout(() => {
+    serverLogger(
+      LoggingTypes.debug,
+      `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} after drop completion`,
+      StoreEnums.onDrop
+    );
+    sessionData.socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
+      payload: sessionData.initiativeList,
+      sessionId: sessionData.sessionId,
+      resetOnDeck: true,
+      isSorted: sessionData.isSorted,
+    });
+  }, 500);
+};
+
+const moveDown = (index: number): void => {
+  console.log(index);
+  console.log(sessionData.isSorted);
+  if (index === sessionData.initiativeList.length - 1) {
+    console.log("=== move down");
+    return;
+  }
+  if (!sessionData.isSorted) return;
+  const toMove = { ...sessionData.initiativeList[index] };
+  sessionData.initiativeList.splice(index, 1);
+  sessionData.initiativeList.splice(index + 1, 0, toMove);
+  sessionData.initiativeList.forEach((item: InitiativeObject, index) => {
+    sessionData.initiativeList[index].roundOrder = index + 1;
+  });
+  serverLogger(
+    LoggingTypes.debug,
+    `drop complete, initiativeList order updating`,
+    StoreEnums.onDrop
+  );
+  setTimeout(() => {
+    serverLogger(
+      LoggingTypes.debug,
+      `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} after drop completion`,
+      StoreEnums.onDrop
+    );
+    sessionData.socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
+      payload: sessionData.initiativeList,
+      sessionId: sessionData.sessionId,
+      resetOnDeck: true,
+      isSorted: sessionData.isSorted,
+    });
+  }, 500);
+};
+
 function addStatusEffects(index: number) {
   serverLogger(
     LoggingTypes.debug,
@@ -1084,6 +1218,20 @@ const toDiscord = (collectionType: CollectionTypes): void => {
   }
 };
 
+const discordRoll = (toRoll: DiceRoll, comment: string): void => {
+  try {
+    sessionData.socket.emit(EmitTypes.DISCORD_ROLL, {
+      payload: toRoll,
+      comment: comment,
+      sessionId: sessionData.sessionId,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      serverLogger(LoggingTypes.alert, error.message, StoreEnums.toDiscord);
+    }
+  }
+};
+
 const resetAll = (emit: boolean): void => {
   sessionData.isSorted = false;
   resetInitiative(emit);
@@ -1172,4 +1320,16 @@ export default {
   updateSorted,
   resetInitiative,
   resetSpells,
+  moveUp,
+  moveDown,
+  updateRoll,
+  addRoll,
+  deleteRoll,
+  getInitialRolls,
+  getRolls,
+  rollDice,
+  emitAddRoll,
+  emitDeleteRoll,
+  emitUpdateRoll,
+  discordRoll,
 };

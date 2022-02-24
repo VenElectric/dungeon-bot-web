@@ -4,13 +4,14 @@
     @row-reorder="reOrderInitiative"
     :paginator="true"
     :rows="10"
-    class="shadow-8"
+    class="shadow-8 p-datatable-sm"
     responsiveLayout="scroll"
   >
     <Column
       :rowReorder="true"
       headerStyle="width: 3rem"
       :reorderableColumn="false"
+      class="column-large-screen"
     ></Column>
     <Column header="Current Turn" field="isCurrent" class="column-large-screen">
       <template #body="{ data, field, index }">
@@ -28,18 +29,39 @@
         />
       </template>
     </Column>
-    <Column header="Character Name" field="characterName">
+    <Column header="Re-Order" class="column-small-screen">
+      <template #body="{ index }">
+        <div class="flex flex-row">
+          <Button
+            icon="pi pi-arrow-up"
+            @click="store.moveUp(index)"
+            class="p-button-sm"
+          ></Button>
+          <Button
+            icon="pi pi-arrow-down"
+            @click="store.moveDown(index)"
+            class="p-button-sm"
+          ></Button>
+        </div>
+      </template>
+    </Column>
+    <Column header="Character Name" field="characterName" class="text-center">
       <template #body="{ data, field }">
         {{ data[field] }}
       </template>
     </Column>
-    <Column header="Character Actions" class="column-small-screen">
+    <Column
+      header="Actions"
+      class="column-small-screen center-button text-center w-auto"
+    >
       <template #body="{ data, index }">
-        <CharacterActions
-          :characterData="data"
-          :index="index"
-          :modalOpen="modalOpen"
-        ></CharacterActions>
+        <div class="flex justify-content-center">
+          <CharacterActions
+            :characterData="data"
+            :index="index"
+            :modalOpen="modalOpen"
+          ></CharacterActions>
+        </div>
       </template>
     </Column>
     <Column
@@ -201,8 +223,7 @@ export default defineComponent({
     display: none;
   }
   :deep(.column-small-screen) {
-    display: flex;
-    justify-content: center;
+    display: table-cell;
   }
   .button-large-screen {
     display: none;

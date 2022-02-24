@@ -51,23 +51,6 @@ export enum SpellObjectEnums {
   all = "all",
 }
 
-export enum SessionFunctionEnums {
-  GET_INITIAL_INIT = "GET_INITIAL_INIT",
-  GET_INITIAL_SPELLS = "GET_INITIAL_SPELLS",
-  NEXT = "NEXT",
-  PREVIOUS = "PREVIOUS",
-  ROUND_START = "ROUND_START",
-  EDIT = "EDIT",
-  DELETE_DATA = "DELETE_DATA",
-  CREATE_NEW = "CREATE_NEW",
-  RE_ROLL = "RE_ROLL",
-  UPDATE_ALL = "UPDATE_ALL",
-  DISCORD = "DISCORD",
-  RESORT = "RESORT",
-  REMOVE_STATUS_EFFECT = "REMOVE_STATUS_EFFECT",
-  SET_CURRENT_TURN = "SET_CURRENT_TURN",
-}
-
 export enum CollectionTypes {
   INITIATIVE = "initiative",
   SPELLS = "spells",

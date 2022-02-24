@@ -51,6 +51,7 @@ import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 import serverLogger from "../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../Interfaces/LoggingTypes";
+import { RollObject } from "../../Interfaces/Rolls";
 
 export default defineComponent({
   name: "SocketReceiver",
@@ -105,6 +106,22 @@ export default defineComponent({
             );
           }
         }
+      });
+
+      socket?.on(EmitTypes.CREATE_NEW_ROLL, (data: RollObject) => {
+        store.addRoll(data);
+      });
+      socket?.on(EmitTypes.UPDATE_ROLL_RECORD, (data: RollObject) => {
+        const rollIndex = store.store.rolls
+          .map((item: RollObject) => item.id)
+          .indexOf(data.id);
+        store.updateRoll(data, rollIndex);
+      });
+      socket?.on(EmitTypes.DELETE_ONE_ROLL, (docId: string) => {
+        const rollIndex = store.store.rolls
+          .map((item: RollObject) => item.id)
+          .indexOf(docId);
+        store.deleteRoll(docId, rollIndex);
       });
       socket?.on(EmitTypes.CREATE_NEW_INITIATIVE, (data: InitiativeObject) => {
         /// check if any data is undefined and then send a request to server for updating initiative list.

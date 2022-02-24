@@ -1,7 +1,7 @@
 <template>
   <Toast />
   <div v-if="!loading">
-    <div class="w-auto">
+    <div class="w-max">
       <ToolBar class="shadow-8 button-toolbar-lg">
         <template #start>
           <div v-if="!isSorted">
@@ -314,17 +314,17 @@ export default defineComponent({
   font-size: 0.7em !important;
 }
 .button-toolbar-lg {
-  display: flex;
+  display: flex !important;
 }
 .button-toolbar-sm {
-  display: none;
+  display: none !important;
 }
 @media only screen and (max-width: 480px) {
   .button-toolbar-lg {
-    display: none;
+    display: none !important;
   }
   .button-toolbar-sm {
-    display: flex;
+    display: flex !important;
   }
 }
 </style>

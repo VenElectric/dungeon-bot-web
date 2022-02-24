@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { InitiativeObject } from "../../../Interfaces/initiative";
-import OverlayPanel from "primevue/overlaypanel";
+import { SpellObject } from "../../../Interfaces/initiative";
 import { PropType, ref, defineProps, inject } from "vue";
 import { IStore } from "../../../data/types";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
@@ -9,17 +8,17 @@ import TieredMenu from "primevue/tieredmenu";
 import SpellEffectIcon from "./SpellEffectIcon.vue";
 import Dialog from "primevue/dialog";
 import Button from "primevue/button";
-import EffectContainer from "./EffectContainer.vue";
+import SpellRecord from "./SpellRecord.vue";
 
 const props = defineProps({
-  characterData: { type: Object as PropType<InitiativeObject>, required: true },
+  spellData: { type: Object as PropType<SpellObject>, required: true },
   index: { type: Number, required: true },
   modalOpen: { type: Function, required: true },
 });
 
 const store = inject<IStore>("store");
 const indexRef = ref(props.index);
-const record = ref(props.characterData);
+const record = ref(props.spellData);
 const editStatuses = ref(false);
 
 if (store === undefined) {
@@ -36,12 +35,8 @@ function toggleEdit(event: any) {
   (editRef.value as any).toggle(event);
 }
 
-function modalOpen() {
+function targetOpen() {
   editStatuses.value = true;
-}
-
-function modalClose() {
-  editStatuses.value = false;
 }
 
 const menuItems = [
@@ -54,21 +49,14 @@ const menuItems = [
     label: "Delete",
     icon: "pi pi-trash",
     command: () => {
-      store.removeCharacter(indexRef.value, record.value.id, true);
+      store.removeSpell(indexRef.value, record.value.id, true);
     },
   },
   {
-    label: "Status Effects",
-    icon: "pi pi-exclamation-triangle",
+    label: "Targets",
+    icon: "pi pi-users",
     command: () => {
-      modalOpen();
-    },
-  },
-  {
-    label: "Set as Current",
-    icon: "pi pi-arrow-circle-right",
-    command: () => {
-      store.setCurrent(indexRef.value);
+      targetOpen();
     },
   },
 ];
@@ -86,12 +74,13 @@ const menuItems = [
   <Dialog
     v-model:visible="editStatuses"
     :style="{ width: '450px' }"
-    header="Edit Initiative"
+    header="Spell Targets"
     :modal="true"
   >
-    <EffectContainer
-      :statusEffects="props.characterData.statusEffects"
-    ></EffectContainer>
+    <SpellRecord
+      :characterIds="record.characterIds"
+      :index="indexRef"
+    ></SpellRecord>
   </Dialog>
 </template>
 

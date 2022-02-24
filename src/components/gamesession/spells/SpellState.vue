@@ -27,7 +27,7 @@
       :value="spells"
       :paginator="true"
       :rows="10"
-      class="shadow-8"
+      class="shadow-8 p-datatable-sm"
       responsiveLayout="scroll"
     >
       <Column header="Spell Name">
@@ -42,7 +42,7 @@
           </div>
         </template>
       </Column>
-      <Column header="Targets" field="characterIds">
+      <Column header="Targets" field="characterIds" class="column-large-screen">
         <template #body="{ index }">
           <Button
             type="button"
@@ -62,7 +62,7 @@
           </OverlayPanel>
         </template>
       </Column>
-      <Column header="Edit/Delete">
+      <Column header="Edit/Delete" class="column-large-screen">
         <template #body="{ data, index }">
           <Button
             icon="pi pi-pencil"
@@ -74,6 +74,15 @@
             class="p-button-rounded p-button-danger"
             @click="() => store.removeSpell(index, data.id, true)"
           />
+        </template>
+      </Column>
+      <Column header="Spell Options" class="column-small-screen">
+        <template #body="{ data, index }">
+          <SpellActions
+            :spellData="data"
+            :index="index"
+            :modalOpen="modalOpen"
+          ></SpellActions>
         </template>
       </Column>
     </DataTable>
@@ -105,10 +114,7 @@ import {
 } from "vue";
 import AddSpell from "./AddSpell.vue";
 import { IStore } from "../../../data/types";
-import {
-  CharacterStatusFirestore,
-  SpellObject,
-} from "../../../Interfaces/initiative";
+import { SpellObject } from "../../../Interfaces/initiative";
 import Button from "primevue/button";
 import OverlayPanel from "primevue/overlaypanel";
 import ToolBar from "primevue/toolbar";
@@ -122,6 +128,8 @@ import Toast from "primevue/toast";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Dialog from "primevue/dialog";
+import TieredMenu from "primevue/tieredmenu";
+import SpellActions from "./SpellActions.vue";
 
 export default defineComponent({
   name: "SpellList",
@@ -136,6 +144,7 @@ export default defineComponent({
     Column,
     SpellRecord,
     Dialog,
+    SpellActions,
   },
   setup() {
     interface CharacterInterface {
@@ -153,6 +162,7 @@ export default defineComponent({
     const pickListIndex = ref(0);
     const recordValue = ref<SpellObject>({} as SpellObject);
     const indexValue = ref(0);
+    const tierMenuRef = ref();
 
     if (store === undefined) {
       serverLogger(
@@ -186,6 +196,12 @@ export default defineComponent({
 
     function toggle(event: any) {
       (op.value as any).toggle(event);
+    }
+
+    function tieredToggle(event: any, data: SpellObject, index: number) {
+      pickListTargets.value = data.characterIds;
+      pickListIndex.value = index;
+      (tierMenuRef.value as any).toggle(event);
     }
 
     function togglePickList(event: any, index: number) {
@@ -244,6 +260,7 @@ export default defineComponent({
       indexValue.value = index;
       editSpell.value = true;
     }
+
     return {
       store,
       loading,
@@ -260,6 +277,8 @@ export default defineComponent({
       indexValue,
       pickListTargets,
       pickListIndex,
+      tierMenuRef,
+      tieredToggle,
     };
   },
 });
@@ -289,5 +308,17 @@ export default defineComponent({
 }
 .p-multiselect {
   width: 10vw;
+}
+:deep(.column-small-screen) {
+  display: none;
+}
+@media only screen and (max-width: 480px) {
+  :deep(.column-large-screen) {
+    display: none;
+  }
+  :deep(.column-small-screen) {
+    display: flex;
+    justify-content: center;
+  }
 }
 </style>

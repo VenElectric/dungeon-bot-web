@@ -16,6 +16,8 @@ import {
   InitiativeObjectEnums,
   SpellObjectEnums,
 } from "../Interfaces/ContextEnums";
+import { RollObject } from "../Interfaces/Rolls";
+import { DiceRoll } from "@dice-roller/rpg-dice-roller";
 
 export interface IData {
   initiativeList: InitiativeObject[];
@@ -23,6 +25,7 @@ export interface IData {
   spells: SpellObject[];
   sessionId: string;
   socket: Socket;
+  rolls: RollObject[];
 }
 
 export interface Character {
@@ -104,4 +107,16 @@ export interface IStore {
   updateSorted: (isSorted: boolean) => void;
   resetSpells: (emit: boolean) => void;
   resetInitiative: (emit: boolean) => void;
+  moveUp: (index: number) => void;
+  moveDown: (index: number) => void;
+  getInitialRolls: () => void;
+  addRoll: (data: RollObject) => void;
+  updateRoll: (data: RollObject, index: number) => void;
+  deleteRoll: (id: string, index: number) => void;
+  getRolls: () => RollObject[];
+  rollDice: (diceRoll: string) => DiceRoll;
+  emitDeleteRoll: (id: string) => void;
+  emitAddRoll: (data: RollObject) => void;
+  emitUpdateRoll: (data: RollObject) => void;
+  discordRoll: (toRoll: DiceRoll, comment: string) => void;
 }

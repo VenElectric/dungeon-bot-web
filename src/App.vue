@@ -1,13 +1,13 @@
 <template>
-  <div id="nav">
-    <!-- <router-link to="/">Home</router-link> |
+  <!-- <div id="nav">
+    <router-link to="/">Home</router-link> |
     <router-link to="/monsterlist">Monster List</router-link>
     <router-link to="/characterlist">Character List</router-link>
     <router-link to="/gamesessions">Game Sessions</router-link>
-    <Toast></Toast> -->
-  </div>
+    <Toast></Toast>
+  </div> -->
   <div className="flex flex-column justify-content-center align-items-center">
-    <span className="p-fieldset text-5xl p-4 mb-6 shadow-8">Dungeon Bot</span>
+    <span className="p-fieldset text-3xl p-4 mb-4 shadow-8">Dungeon Bot</span>
   </div>
   <router-view />
 </template>
