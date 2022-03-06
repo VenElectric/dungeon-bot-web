@@ -2,7 +2,7 @@
   <Toast />
   <div v-if="!loading">
     <div class="w-max">
-      <ToolBar class="shadow-8 hidden md:inline-flex">
+      <ToolBar class="shadow-8 button-toolbar-lg">
         <template #start>
           <div v-if="!isSorted">
             <Button
@@ -48,8 +48,9 @@
           </OverlayPanel>
         </template>
       </ToolBar>
-      <ToolBar class="shadow-8 hidden sm:inline-flex">
+      <ToolBar class="shadow-8 button-toolbar-sm">
         <template #start>
+          <ConfirmPopup></ConfirmPopup>
           <Button icon="pi pi-bars" @click="toggleHam" />
           <TieredMenu
             id="overlay_tmenu"
@@ -319,7 +320,7 @@ export default defineComponent({
 .button-toolbar-sm {
   display: none !important;
 }
-@media only screen and (max-width: 460px) {
+@media only screen and (max-width: 480px) {
   .button-toolbar-lg {
     display: none !important;
   }

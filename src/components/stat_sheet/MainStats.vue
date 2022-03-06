@@ -1,3 +1,16 @@
+<script setup lang="ts">
+import { ref } from "vue";
+const characterStats = ref({
+  characterName: "",
+  characterAge: 0,
+  characterRace: "",
+  characterClass: "",
+  characterLevel: 0,
+  characterBackground: "",
+  characterAlignment: "",
+  characterExperience: 0,
+});
+</script>
 <template>
   <div class="main">
     <div class="center">
@@ -16,14 +29,6 @@
     </div>
   </div>
 </template>
-
-<script lang="ts">
-import { defineComponent } from "vue";
-
-export default defineComponent({
-  name: "MainStats",
-});
-</script>
 
 <style scoped lang="scss">
 $slate-color: rgb(16, 24, 50);
