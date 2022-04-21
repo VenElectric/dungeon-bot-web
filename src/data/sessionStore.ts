@@ -3,7 +3,10 @@ import { ref } from "vue";
 import { LoggingTypes, StoreEnums } from "../Interfaces/LoggingTypes";
 import serverLogger from "../Utils/LoggingClass";
 
-const socket = ref(io("https://dungeon-bot-server.herokuapp.com"));
+const socketString = "http://localhost:8000";
+const productionString = "https://dungeon-bot-server.herokuapp.com";
+
+const socket = ref(io(socketString));
 const sessionId = ref("");
 
 export function getSocket(): any {

@@ -88,7 +88,7 @@ import OverlayPanel from "primevue/overlaypanel";
 import ToolBar from "primevue/toolbar";
 import Button from "primevue/button";
 import Skeleton from "primevue/skeleton";
-import { IStore } from "../../../data/types";
+import { IStore, RollStore } from "../../../data/types";
 import SortableList from "./SortableList.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -115,6 +115,7 @@ export default defineComponent({
   },
   setup() {
     const store = inject<IStore>("store");
+    const rollData = inject<RollStore>("rollData");
     const loading = ref(true);
     const isSorted = computed({
       get() {
@@ -141,6 +142,7 @@ export default defineComponent({
     onMounted(() => {
       loading.value = true;
       store.getInitial();
+      rollData?.ROLL_FUNCS.SETTERS.getInitialRolls();
       serverLogger(
         LoggingTypes.info,
         `retrieved initial init state`,

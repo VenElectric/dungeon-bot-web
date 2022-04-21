@@ -114,7 +114,7 @@ import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import SpellEffectIcon from "./SpellEffectIcon.vue";
 import InitiativeData from "./InitiativeData.vue";
-import { updateRecordInitiative } from "../../../data/emitFunctions";
+import { SERVER_EMITS } from "../../../data/emitFunctions";
 import { useToast } from "primevue/usetoast";
 import CharacterActions from "./CharacterActions.vue";
 //  editMode="cell"
@@ -161,7 +161,7 @@ export default defineComponent({
       editInit.value = false;
       if (store) {
         store.updateCharacterRecord(data, false);
-        updateRecordInitiative(data, store.store.sessionId);
+        SERVER_EMITS.updateRecordInitiative(data, store.store.sessionId);
         toast.add({
           severity: "info",
           summary: "Character Saved",

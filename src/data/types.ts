@@ -38,6 +38,28 @@ export interface CharacterPickListEvent extends PickListMoveAllToSourceEvent {
   items: CharacterStatus[];
 }
 
+export interface RollStore {
+  rollData: Ref<RollObject[]>;
+  ROLL_FUNCS: {
+    GETTERS: {
+      getRolls: () => RollObject[];
+      rollDice: (diceRoll: string) => DiceRoll;
+    };
+    SETTERS: {
+      getInitialRolls: () => void;
+      addRoll: (data: RollObject) => void;
+      updateRoll: (data: RollObject, index: number) => void;
+      deleteRoll: (id: string, index: number) => void;
+    };
+    EMITS: {
+      emitDeleteRoll: (id: string) => void;
+      emitAddRoll: (data: RollObject) => void;
+      emitUpdateRoll: (data: RollObject) => void;
+      discordRoll: (toRoll: DiceRoll, comment: string) => void;
+    };
+  };
+}
+
 export interface IStore {
   store: IData;
   getInitial: () => void;

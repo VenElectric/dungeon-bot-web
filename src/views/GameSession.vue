@@ -84,6 +84,7 @@ import TabView from "primevue/tabview";
 import TabPanel from "primevue/tabpanel";
 import Dialog from "primevue/dialog";
 import CustomRoll from "../components/gamesession/CustomRoll.vue";
+import { updateId } from "../data/sessionStore";
 
 // css to make columns instead of rows for each item (init, spell, info)
 export default defineComponent({
@@ -111,6 +112,7 @@ export default defineComponent({
     const paramsId = String(route.params.id);
     if (store && paramsId) {
       store.updateId(paramsId);
+      updateId(paramsId);
       serverLogger(
         LoggingTypes.debug,
         `updating session Id`,

@@ -7,9 +7,9 @@ import RollIcon from "../RollIcon.vue";
 import InputText from "primevue/inputtext";
 import OverlayPanel from "primevue/overlaypanel";
 import Dialog from "primevue/dialog";
-import { inject, ref } from "vue";
+import { computed, inject, onMounted, ref } from "vue";
 import { RollObject } from "../../Interfaces/Rolls";
-import { IStore } from "../../data/types";
+import { IStore, RollStore } from "../../data/types";
 import {
   ComponentEnums,
   LoggingTypes,
@@ -21,18 +21,19 @@ import { DiceRoll } from "@dice-roller/rpg-dice-roller";
 import { useToast } from "primevue/usetoast";
 
 const store = inject<IStore>("store");
+const rollData = inject<RollStore>("rollData");
 const toast = useToast();
 
-if (store === undefined) {
+if (store === undefined || rollData === undefined) {
   serverLogger(
     LoggingTypes.alert,
     `Failed to inject store`,
     ComponentEnums.SPELLSTATE
   );
-  throw new Error("Failed to inject store");
+  throw new Error("Failed to inject stores");
 }
-const rolls = ref(store.getRolls());
-console.log(rolls.value);
+const rolls = ref(computed(() => rollData?.ROLL_FUNCS.GETTERS.getRolls()));
+console.table(rolls.value);
 const rollModal = ref(false);
 const addRollRef = ref();
 const addRollName = ref("");
@@ -44,8 +45,10 @@ function tryRoll(roll: string) {
   let errorMsg;
 
   try {
-    const myRoll = new DiceRoll(roll);
+    console.log(roll);
+    rollData?.ROLL_FUNCS.GETTERS.rollDice(roll);
   } catch (error) {
+    console.log(error);
     errorMsg = error;
   }
 
@@ -59,7 +62,7 @@ function updateRecordRoll(event: any) {
     .map((item: RollObject) => item.id)
     .indexOf(data.id);
 
-  store?.updateRoll(data[field] as RollObject, rollIndex);
+  rollData?.ROLL_FUNCS.SETTERS.updateRoll(data[field] as RollObject, rollIndex);
 }
 
 function saveRoll(e: any) {
@@ -83,8 +86,8 @@ function saveRoll(e: any) {
     rollValue: addRollValue.value,
     id: rollId,
   };
-  store?.addRoll(rollObject);
-  store?.emitAddRoll(rollObject);
+  rollData?.ROLL_FUNCS.SETTERS.addRoll(rollObject);
+  rollData?.ROLL_FUNCS.EMITS.emitAddRoll(rollObject);
   addRollName.value = "";
   addRollValue.value = "";
 }
@@ -94,7 +97,9 @@ function toggleAdd(event: any) {
 }
 
 function rollDiceDiscord(index: number) {
-  const newRoll = store?.rollDice(rolls.value[index].rollValue);
+  const newRoll = rollData?.ROLL_FUNCS.GETTERS.rollDice(
+    rolls.value[index].rollValue
+  );
 
   toast.add({
     severity: "success",
@@ -103,7 +108,10 @@ function rollDiceDiscord(index: number) {
     life: 3000,
   });
   if (newRoll) {
-    store?.discordRoll(newRoll, rolls.value[index].rollName);
+    rollData?.ROLL_FUNCS.EMITS.discordRoll(
+      newRoll,
+      rolls.value[index].rollName
+    );
   }
 }
 
@@ -111,8 +119,12 @@ function openModal() {
   rollModal.value = true;
 }
 function closeModal(data: RollObject) {
-  store?.addRoll(data);
+  rollData?.ROLL_FUNCS.SETTERS.addRoll(data);
 }
+
+// add in edit and delete
+// transfer rolladd to it's own component
+// use dialogue component to open up rolladd for adding or updating rolls
 </script>
 
 <template>
@@ -142,22 +154,20 @@ function closeModal(data: RollObject) {
     :rows="10"
     class="shadow-8 p-datatable-sm"
     responsiveLayout="scroll"
-    editMode="cell"
-    @cell-edit-complete="updateRecordRoll"
   >
     <Column header="Name" field="rollName">
-      <template #editor="{ data, field }">
-        <InputText v-model="data[field]" autofocus />
+      <template #body="{ data, field }">
+        {{ data[field] }}
       </template>
     </Column>
     <Column header="Value" field="rollValue">
-      <template #editor="{ data, field }">
-        <InputText v-model="data[field]" autofocus />
+      <template #body="{ data, field }">
+        {{ data[field] }}
       </template>
     </Column>
     <Column header="Roll" field="rollId">
       <template #body="{ index }">
-        <RollIcon @click="() => rollDiceDiscord(index)"></RollIcon>
+        <RollIcon @click.prevent="() => rollDiceDiscord(index)"></RollIcon>
       </template>
     </Column>
   </DataTable>
