@@ -157,18 +157,3 @@ function updateNPC() {
     "
   />
 </template>
-
-<!-- 
- :model-value="data.initiative"
-        @update:model-value="
-          (e) => handleChange(e, InitiativeObjectEnums.initiative)
-        "
-         :model-value="data.initiativeModifier"
-        @update:model-value="
-          (e) => handleChange(e, InitiativeObjectEnums.initiativeModifier)
-        "
-         :model-value="data.characterName"
-        @update:model-value="
-          (e) => handleChange(e, InitiativeObjectEnums.characterName)
-        "
-         -->

@@ -23,17 +23,17 @@ import {
 } from "../Utils/TypeChecking";
 import serverLogger from "../Utils/LoggingClass";
 import { StoreEnums, LoggingTypes } from "../Interfaces/LoggingTypes";
-import * as emits from "./emitFunctions";
 import { RollObject } from "../Interfaces/Rolls";
 
-const socketString = "https://dungeon-bot-server.herokuapp.com";
+const socketString = "http://localhost:8000";
+const productionString = "https://dungeon-bot-server.herokuapp.com";
 
 const sessionData = reactive({
   initiativeList: [] as InitiativeObject[],
   isSorted: false,
   spells: [] as SpellObject[],
   sessionId: "",
-  socket: io("https://dungeon-bot-server.herokuapp.com"),
+  socket: io(socketString),
   rolls: [] as RollObject[],
 });
 

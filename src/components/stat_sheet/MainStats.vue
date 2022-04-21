@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import InputText from "primevue/inputtext";
+import InputNumber from "primevue/inputnumber";
+
 const characterStats = ref({
   characterName: "",
   characterAge: 0,
@@ -15,16 +18,37 @@ const characterStats = ref({
   <div class="main">
     <div class="center">
       <div>
-        <input class="text-main" type="text" placeholder="Character Name" />
-        <input class="text-main" type="text" placeholder="Age" />
-        <input class="text-main" type="text" placeholder="Race" />
-        <input class="text-main" type="text" placeholder="Class" />
+        <InputText
+          v-model="characterStats.characterName"
+          placeholder="Character Name"
+        ></InputText>
+        <InputNumber v-model="characterStats.characterAge"></InputNumber>
+        <InputText
+          v-model="characterStats.characterRace"
+          placeholder="Race"
+        ></InputText>
+        <InputText
+          v-model="characterStats.characterClass"
+          placeholder="Class"
+        ></InputText>
       </div>
       <div>
-        <input class="text-main" type="text" placeholder="Level" />
-        <input class="text-main" type="text" placeholder="Background" />
-        <input class="text-main" type="text" placeholder="Alignment" />
-        <input class="text-main" type="text" placeholder="Experience" />
+        <InputNumber
+          v-model="characterStats.characterLevel"
+          placeholder="Level"
+        ></InputNumber>
+        <InputText
+          v-model="characterStats.characterBackground"
+          placeholder="Background"
+        ></InputText>
+        <InputText
+          v-model="characterStats.characterAlignment"
+          placeholder="Alignment"
+        ></InputText>
+        <InputNumber
+          v-model="characterStats.characterExperience"
+          placeholder="Experience"
+        ></InputNumber>
       </div>
     </div>
   </div>

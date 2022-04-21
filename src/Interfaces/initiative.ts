@@ -13,12 +13,6 @@ export interface CharacterStatus {
   characterId: string;
   characterName: string;
 }
-
-export interface CharacterStatusDouble {
-  length: 2;
-  0: CharacterStatus[];
-  1: CharacterStatus[];
-}
 export interface InitiativeObject {
   id: string;
   characterName: string;
@@ -29,8 +23,6 @@ export interface InitiativeObject {
   statusEffects: StatusEffect[];
   isNpc: boolean;
 }
-
-export type InitiativeKeys = keyof InitiativeObject;
 
 export interface SpellObject {
   durationTime: number;
@@ -57,14 +49,3 @@ export interface SessionData {
   SpellObject: SpellObject[];
   sessionId: string;
 }
-
-export interface TargetData {
-  id: string;
-  name: string;
-  status_effects: StatusEffect[] | [];
-}
-
-export type SetInitiativeType = (initiativeList: InitiativeObject[]) => void;
-export type SetSpellType = (spells: SpellObject[]) => void;
-export type SetSortType = (isSorted: boolean) => void;
-export type SetRecordType = (record: InitiativeObject | SpellObject) => void;

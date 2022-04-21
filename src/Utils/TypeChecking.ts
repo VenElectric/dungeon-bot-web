@@ -4,7 +4,6 @@ import {
   InitiativeObject,
   SessionData,
   SpellObject,
-  CharacterStatusDouble,
   ServerSpellObject,
 } from "../Interfaces/initiative";
 import { LoggingTypes } from "../Interfaces/LoggingTypes";

@@ -1,21 +1,20 @@
-import { effect, reactive } from "vue";
+import { reactive, ref } from "vue";
 import {
   CharacterStatus,
   InitiativeObject,
   SpellObject,
   StatusEffect,
   CharacterStatusFirestore,
-  ServerSpellObject,
 } from "../Interfaces/initiative";
 import {
   CollectionTypes,
   InitiativeObjectEnums,
   SpellObjectEnums,
 } from "../Interfaces/ContextEnums";
-import { EmitTypes, SocketData } from "../Interfaces/EmitTypes";
+import { EmitTypes } from "../Interfaces/EmitTypes";
 import { io } from "socket.io-client";
 import { DiceRoll } from "@dice-roller/rpg-dice-roller";
-import { Character, CharacterPickListEvent } from "./types";
+import { CharacterPickListEvent } from "./types";
 import { v4 as uuidv4 } from "uuid";
 import {
   isInitiativeObjectArray,
@@ -23,7 +22,7 @@ import {
 } from "../Utils/TypeChecking";
 import serverLogger from "../Utils/LoggingClass";
 import { StoreEnums, LoggingTypes } from "../Interfaces/LoggingTypes";
-import * as emits from "./emitFunctions";
+import { SERVER_EMITS } from "./emitFunctions";
 import { RollObject } from "../Interfaces/Rolls";
 
 const sessionData = reactive({
@@ -35,356 +34,211 @@ const sessionData = reactive({
   rolls: [] as RollObject[],
 });
 
+const initiativeData = reactive({
+  initiativeList: [] as InitiativeObject[],
+  isSorted: false,
+});
+
+const spellData = reactive({
+  spells: [] as SpellObject[],
+});
+
+const rollData = reactive({
+  rolls: [] as RollObject[],
+});
+
+const sessionId = ref("");
+const socket = ref(io("https://dungeon-bot-server.herokuapp.com"));
+
+const INITIATIVE_FUNCS = {};
+
+const SPELL_FUNCS = {};
+
+const ROLL_FUNCS = {
+  getInitialRolls(): void {
+    serverLogger(
+      LoggingTypes.info,
+      `first fetch initiative`,
+      StoreEnums.getInitial
+    );
+    sessionData.socket.emit(
+      EmitTypes.GET_INITIAL_ROLLS,
+      sessionData.sessionId,
+      (query: RollObject[]) => {
+        rollData.rolls = query;
+        serverLogger(
+          LoggingTypes.info,
+          `initiative store updated`,
+          StoreEnums.getInitial
+        );
+      }
+    );
+  },
+  addRoll(data: RollObject): void {
+    rollData.rolls.push(data);
+  },
+  updateRoll(data: RollObject, index: number): void {
+    rollData.rolls[index] = data;
+  },
+  deleteRoll(index: number): void {
+    rollData.rolls.splice(index, 1);
+  },
+  getRolls(): RollObject[] {
+    return rollData.rolls;
+  },
+  rollDice(diceRoll: string): DiceRoll {
+    const newRoll = new DiceRoll(diceRoll);
+    return newRoll;
+  },
+};
+
 // <----------------------- UTILITIES ----------------------->
 
+// setter set sessionId
 const updateId = (id: string): void => {
   serverLogger(LoggingTypes.info, `updating sessionId`, StoreEnums.updateId);
   sessionData.sessionId = id;
 };
 
-const roomSetup = (): void => {
-  try {
-    serverLogger(LoggingTypes.debug, `joining room`, StoreEnums.roomSetup);
-    sessionData.socket.emit("create", sessionData.sessionId);
-  } catch (error) {
-    serverLogger(
-      LoggingTypes.debug,
-      `unable to connect to socket io`,
-      StoreEnums.roomSetup
-    );
-  }
-};
+// emit initial room setup
+// replaced in server emits
+// const roomSetup = (): void => {
+//   try {
+//     serverLogger(LoggingTypes.debug, `joining room`, StoreEnums.roomSetup);
+//     sessionData.socket.emit("create", sessionData.sessionId);
+//   } catch (error) {
+//     serverLogger(
+//       LoggingTypes.debug,
+//       `unable to connect to socket io`,
+//       StoreEnums.roomSetup
+//     );
+//   }
+// };
 
-const toDiscord = (collectionType: CollectionTypes): void => {
-  try {
-    serverLogger(
-      LoggingTypes.info,
-      `emitting ${EmitTypes.DISCORD} for ${collectionType}`,
-      StoreEnums.toDiscord
-    );
-    sessionData.socket.emit(EmitTypes.DISCORD, {
-      payload: [],
-      sessionId: sessionData.sessionId,
-      collectionType: collectionType,
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      serverLogger(LoggingTypes.alert, error.message, StoreEnums.toDiscord);
-    }
-  }
-};
+//emit spell or initiative
+// replaced in server emits
+// const toDiscord = (collectionType: CollectionTypes): void => {
+//   try {
+//     serverLogger(
+//       LoggingTypes.info,
+//       `emitting ${EmitTypes.DISCORD} for ${collectionType}`,
+//       StoreEnums.toDiscord
+//     );
+//     sessionData.socket.emit(EmitTypes.DISCORD, {
+//       payload: [],
+//       sessionId: sessionData.sessionId,
+//       collectionType: collectionType,
+//     });
+//   } catch (error) {
+//     if (error instanceof Error) {
+//       serverLogger(LoggingTypes.alert, error.message, StoreEnums.toDiscord);
+//     }
+//   }
+// };
 
-const discordRoll = (toRoll: DiceRoll, comment: string): void => {
-  try {
-    sessionData.socket.emit(EmitTypes.DISCORD_ROLL, {
-      payload: toRoll,
-      comment: comment,
-      sessionId: sessionData.sessionId,
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      serverLogger(LoggingTypes.alert, error.message, StoreEnums.toDiscord);
-    }
-  }
-};
+//emit roll
+// replaced in server emits
+// const discordRoll = (toRoll: DiceRoll, comment: string): void => {
+//   try {
+//     sessionData.socket.emit(EmitTypes.DISCORD_ROLL, {
+//       payload: toRoll,
+//       comment: comment,
+//       sessionId: sessionData.sessionId,
+//     });
+//   } catch (error) {
+//     if (error instanceof Error) {
+//       serverLogger(LoggingTypes.alert, error.message, StoreEnums.toDiscord);
+//     }
+//   }
+// };
 
 // <----------------------- ROLLS ----------------------->
+// emit/setter retrieve rolls from server
+// stays here so that it can update the rolls object
+// added to ROLL_FUNCS
+// const getInitialRolls = (): void => {
+//   serverLogger(
+//     LoggingTypes.info,
+//     `first fetch initiative`,
+//     StoreEnums.getInitial
+//   );
+//   sessionData.socket.emit(
+//     EmitTypes.GET_INITIAL_ROLLS,
+//     sessionData.sessionId,
+//     (query: RollObject[]) => {
+//       sessionData.rolls = query;
+//       console.log(query);
+//       serverLogger(
+//         LoggingTypes.info,
+//         `initiative store updated`,
+//         StoreEnums.getInitial
+//       );
+//     }
+//   );
+// };
 
-const getInitialRolls = (): void => {
-  serverLogger(
-    LoggingTypes.info,
-    `first fetch initiative`,
-    StoreEnums.getInitial
-  );
-  sessionData.socket.emit(
-    EmitTypes.GET_INITIAL_ROLLS,
-    sessionData.sessionId,
-    (query: RollObject[]) => {
-      sessionData.rolls = query;
-      console.log(query);
-      serverLogger(
-        LoggingTypes.info,
-        `initiative store updated`,
-        StoreEnums.getInitial
-      );
-    }
-  );
-};
+// setter add new roll
+// const addRoll = (data: RollObject): void => {
+//   sessionData.rolls.push(data);
+// };
 
-const addRoll = (data: RollObject): void => {
-  sessionData.rolls.push(data);
-};
+// emit new roll to server then to other members of room
+// added to emit funcs, need to ensure that we can get sessionid when calling this function
+// const emitAddRoll = (data: RollObject): void => {
+//   sessionData.socket.emit(EmitTypes.CREATE_NEW_ROLL, {
+//     rollData: data,
+//     sessionId: sessionData.sessionId,
+//   });
+//   serverLogger(LoggingTypes.debug, `Adding roll ${data.id}`, "emitAddRoll");
+// };
 
-const emitAddRoll = (data: RollObject): void => {
-  sessionData.socket.emit(EmitTypes.CREATE_NEW_ROLL, {
-    rollData: data,
-    sessionId: sessionData.sessionId,
-  });
-  serverLogger(LoggingTypes.debug, `Adding roll ${data.id}`, "emitAddRoll");
-};
-
+// setter edit roll data
 const updateRoll = (data: RollObject, index: number): void => {
   sessionData.rolls[index] = data;
 };
 
-const emitUpdateRoll = (data: RollObject): void => {
-  sessionData.socket.emit(EmitTypes.UPDATE_ROLL_RECORD, {
-    rollObject: data,
-    sessionId: sessionData.sessionId,
-  });
-};
+// emit roll data update to server then to other members of room
+// added to emit funcs, need to ensure that we can get sessionid when calling this function
+// const emitUpdateRoll = (data: RollObject): void => {
+//   sessionData.socket.emit(EmitTypes.UPDATE_ROLL_RECORD, {
+//     rollObject: data,
+//     sessionId: sessionData.sessionId,
+//   });
+// };
 
+// setter roll
 const deleteRoll = (id: string, index: number): void => {
   sessionData.rolls.splice(index, 1);
 };
 
-const emitDeleteRoll = (id: string): void => {
-  sessionData.socket.emit(EmitTypes.DELETE_ONE_ROLL, {
-    docId: id,
-    sessionId: sessionData.sessionId,
-  });
-};
+// emit deleted roll to server then to other members of room
+// added to emit funcs, need to ensure that we can get sessionid when calling this function
+// const emitDeleteRoll = (id: string): void => {
+//   sessionData.socket.emit(EmitTypes.DELETE_ONE_ROLL, {
+//     docId: id,
+//     sessionId: sessionData.sessionId,
+//   });
+// };
 
+// getter rolls
 const getRolls = (): RollObject[] => {
   return sessionData.rolls;
 };
 
+// utility rolls
 const rollDice = (diceRoll: string): DiceRoll => {
   const newRoll = new DiceRoll(diceRoll);
   return newRoll;
 };
 
-// <----------------------- SPELL ----------------------->
+// ROLLS COMPLETE
+// TODO: LOOK TO SEE WHERE ROLL FUNCS ARE CALLED
 
-const resetSpells = (emit: boolean): void => {
-  sessionData.spells = [];
-  serverLogger(LoggingTypes.info, `spells reset`, StoreEnums.resetAll);
-  if (emit) {
-    serverLogger(
-      LoggingTypes.info,
-      `emitting ${EmitTypes.DELETE_ALL_SPELL}`,
-      StoreEnums.resetAll
-    );
-    sessionData.socket.emit(EmitTypes.DELETE_ALL_SPELL, sessionData.sessionId);
-  }
-};
 
-const updateAllSpells = (data: SpellObject[]): void => {
-  sessionData.spells = data;
-  serverLogger(
-    LoggingTypes.info,
-    `update complete initiative`,
-    StoreEnums.updateAll
-  );
-};
-
-const getInitialSpells = (): void => {
-  serverLogger(
-    LoggingTypes.info,
-    `first fetch spells`,
-    StoreEnums.getInitialSpells
-  );
-  sessionData.socket.emit(
-    EmitTypes.GET_SPELLS,
-    sessionData.sessionId,
-    (spells: SpellObject[]) => {
-      serverLogger(
-        LoggingTypes.debug,
-        `Length: ${spells.length} First ID: ${
-          spells[0] ? spells[0].id : "null"
-        }`,
-        StoreEnums.getInitialSpells
-      );
-      try {
-        sessionData.spells = spells;
-      } catch (error) {
-        if (error instanceof Error) {
-          serverLogger(
-            LoggingTypes.alert,
-            error.message,
-            StoreEnums.getInitialSpells
-          );
-        }
-      }
-
-      serverLogger(
-        LoggingTypes.info,
-        `spell store updated`,
-        StoreEnums.getInitialSpells
-      );
-    }
-  );
-};
-
-const removeSpell = (index: number, id: string, emit: boolean): void => {
-  serverLogger(
-    LoggingTypes.debug,
-    `removing status effects from all characters this spell`,
-    StoreEnums.removeSpell,
-    id
-  );
-  removeStatusEffects(index);
-  setTimeout(() => {
-    serverLogger(
-      LoggingTypes.debug,
-      `removing spell`,
-      StoreEnums.removeSpell,
-      id
-    );
-    sessionData.spells.splice(index, 1);
-    if (emit) {
-      serverLogger(
-        LoggingTypes.debug,
-        `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} for initiative`,
-        StoreEnums.removeSpell
-      );
-      serverLogger(
-        LoggingTypes.debug,
-        `isSorted is: ${sessionData.isSorted}`,
-        StoreEnums.removeSpell
-      );
-      sessionData.socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
-        payload: sessionData.initiativeList,
-        sessionId: sessionData.sessionId,
-        resetOnDeck: false,
-        isSorted: sessionData.isSorted,
-      });
-      serverLogger(
-        LoggingTypes.debug,
-        `emitting ${EmitTypes.DELETE_ONE_SPELL} for spell`,
-        StoreEnums.removeSpell,
-        id
-      );
-      sessionData.socket.emit(EmitTypes.DELETE_ONE_SPELL, {
-        sessionId: sessionData.sessionId,
-        docId: id,
-      });
-    }
-  }, 200);
-};
-
-const addSpell = (data: any): void => {
-  const id = uuidv4();
-  serverLogger(
-    LoggingTypes.debug,
-    `creating spell object`,
-    StoreEnums.addSpell,
-    id
-  );
-  const newData = {
-    durationTime: data.durationTime,
-    durationType: data.durationType,
-    effectName: data.effectName,
-    effectDescription: data.effectDescription,
-    id: id,
-    characterIds: { target: [], source: [] } as CharacterStatusFirestore,
-  };
-  serverLogger(
-    LoggingTypes.debug,
-    `adding characters to spell characterIds`,
-    StoreEnums.addSpell,
-    id
-  );
-  if (sessionData.initiativeList.length > 0) {
-    sessionData.initiativeList.forEach((item: InitiativeObject) => {
-      newData.characterIds.source.push({
-        characterName: item.characterName,
-        characterId: item.id,
-      });
-    });
-  } else {
-    newData.characterIds.source = [];
-    newData.characterIds.target = [];
-  }
-  sessionData.spells.push(newData);
-
-  serverLogger(
-    LoggingTypes.debug,
-    `spell added to store, emitting ${EmitTypes.CREATE_NEW_SPELL}`,
-    StoreEnums.addSpell,
-    id
-  );
-
-  sessionData.socket.emit(EmitTypes.CREATE_NEW_SPELL, {
-    payload: newData,
-    sessionId: sessionData.sessionId,
-  });
-};
-
-const updateSpell = (
-  effectName: string,
-  effectDescription: string,
-  durationTime: number,
-  durationType: string,
-  index: number,
-  emit: boolean,
-  characterIds?: CharacterStatusFirestore
-): void => {
-  serverLogger(
-    LoggingTypes.debug,
-    `updating spell`,
-    StoreEnums.updateSpell,
-    sessionData.spells[index].id
-  );
-  sessionData.spells[index].effectName = effectName;
-  sessionData.spells[index].effectDescription = effectDescription;
-  sessionData.spells[index].durationTime = durationTime;
-  sessionData.spells[index].durationType = durationType;
-  if (characterIds) {
-    sessionData.spells[index].characterIds = characterIds;
-  }
-  console.log(characterIds);
-  if (emit) {
-    serverLogger(
-      LoggingTypes.debug,
-      `emitting ${EmitTypes.UPDATE_RECORD_SPELL}`,
-      StoreEnums.updateSpell,
-      sessionData.spells[index].id
-    );
-    const options = {
-      payload: sessionData.spells[index],
-      sessionId: sessionData.sessionId,
-    };
-    sessionData.socket.emit(EmitTypes.UPDATE_RECORD_SPELL, options);
-  }
-};
-
-const updateSpellItem = (
-  ObjectType: SpellObjectEnums,
-  toUpdate: any,
-  index: number
-): void => {
-  serverLogger(
-    LoggingTypes.debug,
-    `updating spell item ${ObjectType}`,
-    StoreEnums.updateSpellItem,
-    sessionData.spells[index].id
-  );
-  switch (ObjectType) {
-    case SpellObjectEnums.effectName:
-      sessionData.spells[index].effectName = toUpdate;
-      break;
-    case SpellObjectEnums.effectDescription:
-      sessionData.spells[index].effectDescription = toUpdate;
-      break;
-    case SpellObjectEnums.durationType:
-      sessionData.spells[index].durationType = toUpdate;
-      break;
-    case SpellObjectEnums.durationTime:
-      sessionData.spells[index].durationTime = toUpdate;
-      break;
-    case SpellObjectEnums.characterIds:
-      sessionData.spells[index].characterIds = toUpdate;
-      break;
-  }
-};
-
-const getSpells = (): SpellObject[] => {
-  return sessionData.spells;
-};
 
 // <----------------------- MIXED ----------------------->
-
+// setter update either spells or initiative
+// is this called in the initiative section or spell section?
 const updateAll = (
   collectionType: CollectionTypes,
   data: InitiativeObject[] | SpellObject[]
@@ -419,6 +273,8 @@ const updateAll = (
   }
 };
 
+// setter removes character ids from target or source in spells
+// is this called in the initiative section or spell section?
 const removeCharacterFromSpells = (characterId: string): void => {
   for (const [spellIndex, spell] of sessionData.spells.entries()) {
     const indexZero = spell.characterIds.source
@@ -448,6 +304,8 @@ const removeCharacterFromSpells = (characterId: string): void => {
   }
 };
 
+// setter adds spell (status effect) to all initiative characters
+// is this called in the initiative section or spell section?
 function addStatusEffects(index: number) {
   serverLogger(
     LoggingTypes.debug,
@@ -464,6 +322,8 @@ function addStatusEffects(index: number) {
   });
 }
 
+// setter removes spell (status effect) from all initiative characters
+// is this called in the initiative section or spell section?
 function removeStatusEffects(spellIndex: number) {
   serverLogger(
     LoggingTypes.debug,
@@ -484,6 +344,8 @@ function removeStatusEffects(spellIndex: number) {
   }
 }
 
+// setter adds spell (status effect) to one initiative character
+// is this called in the initiative section or spell section?
 function addStatusEffect(
   spellName: string,
   spellId: string,
@@ -502,7 +364,8 @@ function addStatusEffect(
     effectDescription: effectDescription,
   });
 }
-
+// setter removes spell (status effect) from one initiative character
+// is this called in the initiative section or spell section?
 function removeStatusEffect(spellId: string, characterIndex: number): void {
   serverLogger(
     LoggingTypes.debug,
@@ -519,6 +382,8 @@ function removeStatusEffect(spellId: string, characterIndex: number): void {
   );
 }
 
+// setter move all character ids from source to target in spell
+// is this called in the initiative section or spell section?
 const changeAllCharacterToTarget = (index: number): void => {
   serverLogger(
     LoggingTypes.debug,
@@ -579,6 +444,8 @@ const changeAllCharacterToTarget = (index: number): void => {
   }
 };
 
+// setter move all character ids from target to source in spell
+// is this called in the initiative section or spell section?
 const changeAllCharacterToSource = (index: number): void => {
   try {
     sessionData.spells[index].characterIds.source = [
@@ -633,6 +500,8 @@ const changeAllCharacterToSource = (index: number): void => {
   }
 };
 
+// setter move one character id from target to source in spell
+// is this called in the initiative section or spell section?
 const changeOneCharacterToSource = (
   e: CharacterPickListEvent,
   index: number
@@ -690,6 +559,8 @@ const changeOneCharacterToSource = (
   }
 };
 
+// setter move one character id from source to target in spell
+// is this called in the initiative section or spell section?
 const changeOneCharacterToTarget = (
   e: CharacterPickListEvent,
   index: number
@@ -760,19 +631,23 @@ const changeOneCharacterToTarget = (
 
 // <----------------------- INITIATIVE ----------------------->
 
+// getter initiative
 const getInitiative = (): InitiativeObject[] => {
   return sessionData.initiativeList;
 };
 
+// getter isSorted
 const getSorted = (): boolean => {
   return sessionData.isSorted;
 };
 
+// utility rolls (reroll for initiative)
 const reRoll = (): number => {
   const newRoll = new DiceRoll(`d20`);
   return Number(newRoll.total);
 };
 
+// setter initiative
 const updateAllInitiative = (data: InitiativeObject[]): void => {
   sessionData.initiativeList = data;
   serverLogger(
@@ -783,6 +658,7 @@ const updateAllInitiative = (data: InitiativeObject[]): void => {
   return;
 };
 
+// setter isCurrent -> false
 const alltoFalse = (): void => {
   serverLogger(
     LoggingTypes.debug,
@@ -800,6 +676,7 @@ const alltoFalse = (): void => {
   }
 };
 
+// setter update isSorted
 const updateSorted = (isSorted: boolean): void => {
   serverLogger(
     LoggingTypes.debug,
@@ -809,6 +686,7 @@ const updateSorted = (isSorted: boolean): void => {
   sessionData.isSorted = isSorted;
 };
 
+// setter/emit initiative
 const getInitial = (): void => {
   serverLogger(
     LoggingTypes.info,
@@ -830,6 +708,7 @@ const getInitial = (): void => {
   );
 };
 
+// setter update one character record
 // remove alltofalse to where it's needed
 const updateCharacterRecord = (
   initiative: InitiativeObject,
@@ -861,6 +740,7 @@ const updateCharacterRecord = (
   );
 };
 
+// setter update one character item
 const updateCharacterItem = (
   ObjectType: InitiativeObjectEnums,
   toUpdate: any,
@@ -919,6 +799,7 @@ const updateCharacterItem = (
   }
 };
 
+// setter/emit add new character initiative
 const addCharacter = (data: InitiativeObject): void => {
   serverLogger(
     LoggingTypes.debug,
@@ -972,6 +853,7 @@ const addCharacter = (data: InitiativeObject): void => {
   });
 };
 
+// setter initiative delete character
 const removeCharacter = (index: number, id: string, emit: boolean): void => {
   sessionData.isSorted = false;
   sessionData.initiativeList.splice(index, 1);
@@ -1011,6 +893,7 @@ const removeCharacter = (index: number, id: string, emit: boolean): void => {
   }
 };
 
+// legacy
 const startDrag = (evt: DragEvent, index: number): void => {
   if (evt.dataTransfer !== null) {
     evt.dataTransfer.dropEffect = "move";
@@ -1019,14 +902,19 @@ const startDrag = (evt: DragEvent, index: number): void => {
   }
 };
 
+// legacy
+
 const dragOver = (evt: DragEvent): void => {
   evt.preventDefault();
 };
+
+// legacy
 
 const dragEnter = (evt: DragEvent): void => {
   console.log(evt, "dragEnter");
 };
 
+// setter initiative update round order
 const onDrop = (evt: any): void => {
   if (!sessionData.isSorted) return;
   const toMove = { ...sessionData.initiativeList[evt.dragIndex] };
@@ -1057,13 +945,9 @@ const onDrop = (evt: any): void => {
   }
 };
 
+// setter initiative change round order for mobile
 const moveUp = (index: number): void => {
-  console.log(index);
-  console.log(sessionData.isSorted);
-  if (index === 0) {
-    console.log("===");
-    return;
-  }
+  if (index === 0) return;
   if (!sessionData.isSorted) return;
   const toMove = { ...sessionData.initiativeList[index] };
   sessionData.initiativeList.splice(index, 1);
@@ -1091,6 +975,7 @@ const moveUp = (index: number): void => {
   }, 500);
 };
 
+// setter initiative change round order for mobile
 const moveDown = (index: number): void => {
   console.log(index);
   console.log(sessionData.isSorted);
@@ -1125,6 +1010,7 @@ const moveDown = (index: number): void => {
   }, 500);
 };
 
+// emit round start
 const roundStart = (): void => {
   serverLogger(
     LoggingTypes.info,
@@ -1147,6 +1033,7 @@ const roundStart = (): void => {
   );
 };
 
+// setter/emit resort initiative to all in room
 const reSort = (): void => {
   serverLogger(
     LoggingTypes.info,
@@ -1168,6 +1055,7 @@ const reSort = (): void => {
   );
 };
 
+// setter/emit set current character at index
 const setCurrent = (index: number): void => {
   serverLogger(
     LoggingTypes.info,
@@ -1191,6 +1079,7 @@ const setCurrent = (index: number): void => {
   });
 };
 
+// setter/emit next initiative
 const nextTurn = (): void => {
   serverLogger(
     LoggingTypes.info,
@@ -1200,6 +1089,7 @@ const nextTurn = (): void => {
   sessionData.socket.emit(EmitTypes.NEXT, sessionData.sessionId);
 };
 
+// setter/emit previous initiative
 const previousTurn = (): void => {
   serverLogger(
     LoggingTypes.info,
@@ -1209,6 +1099,7 @@ const previousTurn = (): void => {
   sessionData.socket.emit(EmitTypes.PREVIOUS, sessionData.sessionId);
 };
 
+// setter reset spells and initiative
 const resetAll = (emit: boolean): void => {
   sessionData.isSorted = false;
   resetInitiative(emit);
@@ -1220,6 +1111,7 @@ const resetAll = (emit: boolean): void => {
   );
 };
 
+// setter reset initiative
 const resetInitiative = (emit: boolean): void => {
   sessionData.isSorted = false;
   sessionData.initiativeList = [];
@@ -1274,7 +1166,6 @@ export default {
   nextTurn,
   previousTurn,
   toDiscord,
-  roomSetup,
   updateAll,
   removeSpell,
   resetAll,
