@@ -1,5 +1,5 @@
 export interface CharacterStatus {
-  characterId: string;
+  id: string;
   characterName: string;
 }
 

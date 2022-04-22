@@ -7,6 +7,7 @@ import { LoggingTypes, StoreEnums } from "../Interfaces/LoggingTypes";
 import serverLogger from "../Utils/LoggingClass";
 import { getSocket, getsessionId } from "./sessionStore";
 import { v4 as uuidv4 } from "uuid";
+import { findIndexById } from "./utilities";
 
 const initiativeList = ref([] as InitiativeObject[]);
 const isSorted = ref(false);
@@ -31,6 +32,23 @@ const INITIATIVE_FUNCS = {
         StoreEnums.updateAll
       );
       return;
+    },
+    updateCharacterRecord(initiative: InitiativeObject): void {
+      // is reset// all to false needs to be a separate thing
+      serverLogger(
+        LoggingTypes.debug,
+        `updating initiative Ojbect`,
+        StoreEnums.updateCharacterRecord,
+        initiative.id
+      );
+      const initIndex = findIndexById(initiativeList.value, initiative.id);
+      initiativeList.value[initIndex] = initiative;
+      serverLogger(
+        LoggingTypes.debug,
+        `update complete`,
+        StoreEnums.updateCharacterRecord,
+        initiative.id
+      );
     },
     alltoFalse(): void {
       serverLogger(
@@ -85,7 +103,7 @@ const INITIATIVE_FUNCS = {
         `changing all isCurrent to false`,
         StoreEnums.addCharacter
       );
-      alltoFalse();
+      this.alltoFalse();
       isSorted.value = false;
 
       serverLogger(
@@ -97,7 +115,7 @@ const INITIATIVE_FUNCS = {
 
       initiativeList.value.push(data);
       // update once spell store is created
-      // possibly need to keep this as a separate function??
+      // this should be it's own function
       if (sessionData.spells.length > 0) {
         serverLogger(
           LoggingTypes.debug,
@@ -257,83 +275,6 @@ const INITIATIVE_FUNCS = {
     },
   },
 };
-
-// <----------------------- INITIATIVE ----------------------->
-
-// getter initiative
-// const getInitiative = (): InitiativeObject[] => {
-//   return initiativeList.value;
-// };
-
-// getter isSorted
-// const getSorted = (): boolean => {
-//   return isSorted.value;
-// };
-
-// utility rolls (reroll for initiative)
-// what function calls this and which category would this go under?
-const reRoll = (): number => {
-  const newRoll = new DiceRoll(`d20`);
-  return Number(newRoll.total);
-};
-
-// setter initiative
-// const updateAllInitiative = (data: InitiativeObject[]): void => {
-//   initiativeList.value = data;
-//   serverLogger(
-//     LoggingTypes.info,
-//     `update complete initiative`,
-//     StoreEnums.updateAll
-//   );
-//   return;
-// };
-
-// setter isCurrent -> false
-// const alltoFalse = (): void => {
-//   serverLogger(
-//     LoggingTypes.debug,
-//     `setting isCurrent for all records to false`,
-//     StoreEnums.alltoFalse
-//   );
-//   try {
-//     initiativeList.value.forEach((item: InitiativeObject, index) => {
-//       initiativeList.value[index].isCurrent = false;
-//     });
-//   } catch (error) {
-//     if (error instanceof Error) {
-//       serverLogger(LoggingTypes.alert, error.message, StoreEnums.alltoFalse);
-//     }
-//   }
-// };
-
-// setter update isSorted
-// const updateSorted = (isSortedNew: boolean): void => {
-//   serverLogger(
-//     LoggingTypes.debug,
-//     `updating isSorted to: ${isSortedNew}`,
-//     StoreEnums.updateSorted
-//   );
-//   isSorted.value = isSortedNew;
-// };
-
-// setter/emit initiative
-// const getInitial = (): void => {
-//   serverLogger(
-//     LoggingTypes.info,
-//     `first fetch initiative`,
-//     StoreEnums.getInitial
-//   );
-
-//   socket.emit(EmitTypes.GET_INITIAL, sessionData.sessionId, (query: any) => {
-//     initiativeList.value = query.initiativeList;
-//     isSorted.value = query.isSorted;
-//     serverLogger(
-//       LoggingTypes.info,
-//       `initiative store updated`,
-//       StoreEnums.getInitial
-//     );
-//   });
-// };
 
 // setter update one character record
 // remove alltofalse to where it's needed
@@ -766,4 +707,10 @@ const resetInitiative = (emit: boolean): void => {
       sessionId: sessionData.sessionId,
     });
   }
+};
+
+export default {
+  initiativeList,
+  INITIATIVE_FUNCS,
+  isSorted,
 };
