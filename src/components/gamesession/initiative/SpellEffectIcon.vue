@@ -7,16 +7,6 @@
   >
     <OverlayPanel ref="overLay" class="px-3">
       <EffectContainer :statusEffects="statusEffects"></EffectContainer>
-      <!-- <h3 class="mt-0">Effects</h3>
-      <div
-        v-if="lengthNumber > 0"
-        class="flex flex-column align-content-center"
-      >
-        <em v-for="status in statusEffects" :key="status.id">
-          {{ status.spellName }}
-        </em>
-      </div>
-      <div v-else>No Effects to Display</div> -->
     </OverlayPanel>
   </em>
 </template>

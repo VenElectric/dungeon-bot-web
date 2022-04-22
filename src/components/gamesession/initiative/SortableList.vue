@@ -117,10 +117,6 @@ import InitiativeData from "./InitiativeData.vue";
 import { SERVER_EMITS } from "../../../data/emitFunctions";
 import { useToast } from "primevue/usetoast";
 import CharacterActions from "./CharacterActions.vue";
-//  editMode="cell"
-//     @cell-edit-complete="handleChange"
-//  InitRecord,
-//     OverlayPanel,
 export default defineComponent({
   name: "SortableList",
   components: {

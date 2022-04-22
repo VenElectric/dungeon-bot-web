@@ -8,7 +8,7 @@
         placeholder="Character Name"
         :model-value="data.characterName"
         @update:model-value="
-          (e) => handleChange(e, InitiativeObjectEnums.characterName)
+          (e:any) => handleChange(e, InitiativeObjectEnums.characterName)
         "
       />
       <Button
@@ -36,7 +36,7 @@
         placeholder="Initiative Roll"
         :model-value="data.initiative"
         @update:model-value="
-          (e) => handleChange(e, InitiativeObjectEnums.initiative)
+          (e:any) => handleChange(e, InitiativeObjectEnums.initiative)
         "
         :disabled="roll"
       />
@@ -67,7 +67,7 @@
         placeholder="Initiative Modifier"
         :model-value="data.initiativeModifier"
         @update:model-value="
-          (e) => handleChange(e, InitiativeObjectEnums.initiativeModifier)
+          (e:any) => handleChange(e, InitiativeObjectEnums.initiativeModifier)
         "
       />
     </div>

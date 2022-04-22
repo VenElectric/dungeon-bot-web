@@ -7,13 +7,18 @@ import { CharacterStatusFirestore, SpellObject } from "../Interfaces/Spells";
 import serverLogger from "../Utils/LoggingClass";
 import { getSocket, getsessionId } from "./sessionStore";
 import { v4 as uuidv4 } from "uuid";
+import { findIndexById } from "./utilities";
 
 const spellStore = ref([] as SpellObject[]);
 
 const socket = getSocket();
 
 const SPELL_FUNCS = {
-  GETTERS: {},
+  GETTERS: {
+    getspells(): SpellObject[] {
+      return spellStore.value;
+    },
+  },
   SETTERS: {
     resetSpells(emit: boolean): void {
       spellStore.value = [];
@@ -56,48 +61,96 @@ const SPELL_FUNCS = {
         spellStore.value.splice(index, 1);
       }, 200);
     },
-    addSpell = (data: any): void => {
-        const id = uuidv4();
-        serverLogger(
-          LoggingTypes.debug,
-          `creating spell object`,
-          StoreEnums.addSpell,
-          id
-        );
-        const newData = {
-          durationTime: data.durationTime,
-          durationType: data.durationType,
-          effectName: data.effectName,
-          effectDescription: data.effectDescription,
-          id: id,
-          characterIds: { target: [], source: [] } as CharacterStatusFirestore,
-        };
-        serverLogger(
-          LoggingTypes.debug,
-          `adding characters to spell characterIds`,
-          StoreEnums.addSpell,
-          id
-        );
-        if (sessionData.initiativeList.length > 0) {
-          sessionData.initiativeList.forEach((item: InitiativeObject) => {
-            newData.characterIds.source.push({
-              characterName: item.characterName,
-              characterId: item.id,
-            });
-          });
-        } else {
-          newData.characterIds.source = [];
-          newData.characterIds.target = [];
-        }
-        spellStore.value.push(newData);
-      
-        serverLogger(
-          LoggingTypes.debug,
-          `spell added to store, emitting ${EmitTypes.CREATE_NEW_SPELL}`,
-          StoreEnums.addSpell,
-          id
-        );
+    addSpell(data: any): SpellObject {
+      const id = uuidv4();
+      serverLogger(
+        LoggingTypes.debug,
+        `creating spell object`,
+        StoreEnums.addSpell,
+        id
+      );
+      const newData = {
+        durationTime: data.durationTime,
+        durationType: data.durationType,
+        effectName: data.effectName,
+        effectDescription: data.effectDescription,
+        id: id,
+        characterIds: { target: [], source: [] } as CharacterStatusFirestore,
       };
+      serverLogger(
+        LoggingTypes.debug,
+        `adding characters to spell characterIds`,
+        StoreEnums.addSpell,
+        id
+      );
+
+      serverLogger(
+        LoggingTypes.debug,
+        `spell added to store, emitting ${EmitTypes.CREATE_NEW_SPELL}`,
+        StoreEnums.addSpell,
+        id
+      );
+      return newData;
+    },
+    initializeCharacterIDS(
+      spellData: SpellObject,
+      initiativeList: InitiativeObject[]
+    ): SpellObject {
+      if (initiativeList.length > 0) {
+        initiativeList.forEach((item: InitiativeObject) => {
+          spellData.characterIds.source.push({
+            characterName: item.characterName,
+            characterId: item.id,
+          });
+        });
+      } else {
+        spellData.characterIds.source = [];
+        spellData.characterIds.target = [];
+      }
+      return spellData;
+    },
+    updateSpell(data: SpellObject): void {
+      serverLogger(
+        LoggingTypes.debug,
+        `updating spell`,
+        StoreEnums.updateSpell,
+        data.id
+      );
+      const spellId = findIndexById(spellStore.value, data.id);
+      if (spellId > -1) {
+        spellStore.value[spellId] = data;
+      }
+    },
+    updateSpellItem(
+      ObjectType: SpellObjectEnums,
+      toUpdate: any,
+      index: number
+    ): SpellObject {
+      serverLogger(
+        LoggingTypes.debug,
+        `updating spell item ${ObjectType}`,
+        StoreEnums.updateSpellItem,
+        spellStore.value[index].id
+      );
+      switch (ObjectType) {
+        case SpellObjectEnums.effectName:
+          spellStore.value[index].effectName = toUpdate;
+          break;
+        case SpellObjectEnums.effectDescription:
+          spellStore.value[index].effectDescription = toUpdate;
+          break;
+        case SpellObjectEnums.durationType:
+          spellStore.value[index].durationType = toUpdate;
+          break;
+        case SpellObjectEnums.durationTime:
+          spellStore.value[index].durationTime = toUpdate;
+          break;
+        case SpellObjectEnums.characterIds:
+          spellStore.value[index].characterIds = toUpdate;
+          break;
+      }
+      return spellStore.value[index];
+    },
   },
   EMITS: {
     getInitialSpells(): void {
@@ -134,23 +187,8 @@ const SPELL_FUNCS = {
         );
       });
     },
-    emitRemoveSpell(): void {
-      serverLogger(
-        LoggingTypes.debug,
-        `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} for initiative`,
-        StoreEnums.removeSpell
-      );
-      serverLogger(
-        LoggingTypes.debug,
-        `isSorted is: ${sessionData.isSorted}`,
-        StoreEnums.removeSpell
-      );
-      socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
-        payload: sessionData.initiativeList,
-        sessionId: sessionData.sessionId,
-        resetOnDeck: false,
-        isSorted: sessionData.isSorted,
-      });
+    emitDeleteSpell(id: string): void {
+      const sessionId = getsessionId();
       serverLogger(
         LoggingTypes.debug,
         `emitting ${EmitTypes.DELETE_ONE_SPELL} for spell`,
@@ -158,16 +196,23 @@ const SPELL_FUNCS = {
         id
       );
       socket.emit(EmitTypes.DELETE_ONE_SPELL, {
-        sessionId: sessionData.sessionId,
+        sessionId: sessionId,
         docId: id,
       });
     },
-    emitCreateSpell(): void {
-        socket.emit(EmitTypes.CREATE_NEW_SPELL, {
-            payload: newData,
-            sessionId: sessionData.sessionId,
-          });
-    }
+    emitNewSpell(spell: SpellObject): void {
+      socket.emit(EmitTypes.CREATE_NEW_SPELL, {
+        payload: spell,
+        sessionId: getsessionId(),
+      });
+    },
+    emitUpdateSpell(spell: SpellObject): void {
+      socket.emit(EmitTypes.UPDATE_RECORD_SPELL, {
+        payload: spell,
+        sessionId: getsessionId(),
+        docId: spell.id,
+      });
+    },
   },
 };
 
@@ -182,126 +227,10 @@ const SPELL_FUNCS = {
 // setter delete one spell
 
 // setter add new spell and emit
-const addSpell = (data: any): void => {
-  const id = uuidv4();
-  serverLogger(
-    LoggingTypes.debug,
-    `creating spell object`,
-    StoreEnums.addSpell,
-    id
-  );
-  const newData = {
-    durationTime: data.durationTime,
-    durationType: data.durationType,
-    effectName: data.effectName,
-    effectDescription: data.effectDescription,
-    id: id,
-    characterIds: { target: [], source: [] } as CharacterStatusFirestore,
-  };
-  serverLogger(
-    LoggingTypes.debug,
-    `adding characters to spell characterIds`,
-    StoreEnums.addSpell,
-    id
-  );
-  if (sessionData.initiativeList.length > 0) {
-    sessionData.initiativeList.forEach((item: InitiativeObject) => {
-      newData.characterIds.source.push({
-        characterName: item.characterName,
-        characterId: item.id,
-      });
-    });
-  } else {
-    newData.characterIds.source = [];
-    newData.characterIds.target = [];
-  }
-  spellStore.value.push(newData);
-
-  serverLogger(
-    LoggingTypes.debug,
-    `spell added to store, emitting ${EmitTypes.CREATE_NEW_SPELL}`,
-    StoreEnums.addSpell,
-    id
-  );
-
-  socket.emit(EmitTypes.CREATE_NEW_SPELL, {
-    payload: newData,
-    sessionId: sessionData.sessionId,
-  });
-};
 
 // setter update one spell and emit
-const updateSpell = (
-  effectName: string,
-  effectDescription: string,
-  durationTime: number,
-  durationType: string,
-  index: number,
-  emit: boolean,
-  characterIds?: CharacterStatusFirestore
-): void => {
-  serverLogger(
-    LoggingTypes.debug,
-    `updating spell`,
-    StoreEnums.updateSpell,
-    spellStore.value[index].id
-  );
-  spellStore.value[index].effectName = effectName;
-  spellStore.value[index].effectDescription = effectDescription;
-  spellStore.value[index].durationTime = durationTime;
-  spellStore.value[index].durationType = durationType;
-  if (characterIds) {
-    spellStore.value[index].characterIds = characterIds;
-  }
-  console.log(characterIds);
-  if (emit) {
-    serverLogger(
-      LoggingTypes.debug,
-      `emitting ${EmitTypes.UPDATE_RECORD_SPELL}`,
-      StoreEnums.updateSpell,
-      spellStore.value[index].id
-    );
-    const options = {
-      payload: spellStore.value[index],
-      sessionId: sessionData.sessionId,
-    };
-    socket.emit(EmitTypes.UPDATE_RECORD_SPELL, options);
-  }
-};
 
 // setter update spell variable
-const updateSpellItem = (
-  ObjectType: SpellObjectEnums,
-  toUpdate: any,
-  index: number
-): void => {
-  serverLogger(
-    LoggingTypes.debug,
-    `updating spell item ${ObjectType}`,
-    StoreEnums.updateSpellItem,
-    spellStore.value[index].id
-  );
-  switch (ObjectType) {
-    case SpellObjectEnums.effectName:
-      spellStore.value[index].effectName = toUpdate;
-      break;
-    case SpellObjectEnums.effectDescription:
-      spellStore.value[index].effectDescription = toUpdate;
-      break;
-    case SpellObjectEnums.durationType:
-      spellStore.value[index].durationType = toUpdate;
-      break;
-    case SpellObjectEnums.durationTime:
-      spellStore.value[index].durationTime = toUpdate;
-      break;
-    case SpellObjectEnums.characterIds:
-      spellStore.value[index].characterIds = toUpdate;
-      break;
-  }
-};
 
 // getter spells
-const getSpells = (): SpellObject[] => {
-  return spellStore.value;
-};
 

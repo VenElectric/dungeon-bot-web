@@ -44,11 +44,12 @@ export interface RollStore {
     GETTERS: {
       getRolls: () => RollObject[];
       rollDice: (diceRoll: string) => DiceRoll;
+      tryRoll: (roll: string) => unknown;
     };
     SETTERS: {
       getInitialRolls: () => void;
-      addRoll: (data: RollObject) => void;
-      updateRoll: (data: RollObject, index: number) => void;
+      addRoll: (rollName: string, rollValue: string) => void;
+      updateRoll: (rollName: string, rollValue: string, index: number) => void;
       deleteRoll: (id: string, index: number) => void;
     };
     EMITS: {

@@ -23,7 +23,7 @@ export const SERVER_EMITS = {
     });
   },
   createNewSpell(spell: SpellObject, sessionId: string): void {
-    store.store.socket.emit(EmitTypes.CREATE_NEW_INITIATIVE, {
+    store.store.socket.emit(EmitTypes.CREATE_NEW_SPELL, {
       payload: spell,
       sessionId: sessionId,
     });

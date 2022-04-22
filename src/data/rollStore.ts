@@ -20,6 +20,16 @@ const ROLL_FUNCS = {
       const newRoll = new DiceRoll(diceRoll);
       return newRoll;
     },
+    tryRoll(roll: string): any {
+      let errorMsg;
+      try {
+        ROLL_FUNCS.GETTERS.rollDice(roll);
+      } catch (error) {
+        errorMsg = error;
+      }
+      console.log(typeof errorMsg);
+      return errorMsg;
+    },
   },
   SETTERS: {
     getInitialRolls(): void {
@@ -42,11 +52,20 @@ const ROLL_FUNCS = {
         }
       );
     },
-    addRoll(data: RollObject): void {
-      rollData.value.push(data);
+    addRoll(rollName: string, rollValue: string): RollObject {
+      const rollId = uuidv4();
+      const rollObject = {
+        rollName: rollName,
+        rollValue: rollValue,
+        id: rollId,
+      };
+      rollData.value.push(rollObject);
+      return rollObject;
     },
-    updateRoll(data: RollObject, index: number): void {
-      rollData.value[index] = data;
+    updateRoll(rollName: string, rollValue: string, index: number): void {
+      rollData.value[index].rollName = rollName;
+      rollData.value[index].rollValue = rollValue;
+      console.log(rollData.value[index]);
     },
     deleteRoll(index: number): void {
       rollData.value.splice(index, 1);
