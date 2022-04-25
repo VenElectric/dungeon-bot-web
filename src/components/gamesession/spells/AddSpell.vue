@@ -9,10 +9,11 @@
       <InputText
         id="spellName"
         type="text"
+        v-model="data.effectName"
         placeholder="Spell Effect Name"
         :model-value="data.effectName"
         @update:model-value="
-          (e) => handleChange(e, SpellObjectEnums.effectName)
+          (e:any) => handleChange(e, SpellObjectEnums.effectName)
         "
       />
     </div>
@@ -41,9 +42,10 @@
         v-tooltip.top="'Select the effect duration number value.'"
       />
       <InputNumber
+        v-model="data.durationTime"
         :model-value="data.durationTime"
         @update:model-value="
-          (e) => handleChange(e, SpellObjectEnums.durationTime)
+          (e: any) => handleChange(e, SpellObjectEnums.durationTime)
         "
       />
     </div>
@@ -62,23 +64,12 @@
         option-value="value"
         placeholder="Duration"
         @update:model-value="
-          (e) => handleChange(e, SpellObjectEnums.durationType)
+          (e: any) => handleChange(e, SpellObjectEnums.durationType)
         "
       ></Dropdown>
     </div>
   </div>
   <Button
-    label="Save"
-    class="pi-button-primary m-2"
-    v-if="!isUpdate"
-    @click.prevent="
-      (e) => {
-        spellFunction(e, data);
-      }
-    "
-  />
-  <Button
-    v-else
     label="Save"
     class="pi-button-primary m-2"
     @click.prevent="
@@ -105,7 +96,6 @@ export default defineComponent({
   components: { Dropdown, InputNumber, InputText, Button },
   props: {
     spellFunction: { type: Function, required: true },
-    isUpdate: { type: Boolean, required: true },
     spell: { type: Object as PropType<SpellObject>, required: false },
     index: { type: Number, required: false },
   },
@@ -126,7 +116,7 @@ export default defineComponent({
 
     serverLogger(
       LoggingTypes.info,
-      `created. isUpdate? ${props.isUpdate}`,
+      `created`,
       ComponentEnums.ADDSPELL,
       props?.spell?.id
     );

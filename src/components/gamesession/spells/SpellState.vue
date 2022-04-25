@@ -4,11 +4,16 @@
     <ConfirmPopup></ConfirmPopup>
     <ToolBar class="shadow-8">
       <template #start>
-        <Button
+        <!-- <Button
           type="button"
           label="Clear Spells"
           @click="(e) => confirm1(e)"
           class="p-button-sm"
+        /> -->
+        <ResetStore
+          label="Spells"
+          :resetFunc="spellSetters.resetSpells"
+          :emitFunc="spellEmits.emitUpdateAllSpells"
         />
       </template>
       <template #end>
@@ -19,73 +24,79 @@
           class="p-button-sm"
         />
         <OverlayPanel ref="op" :showCloseIcon="true" :dismissable="true">
-          <AddSpell :spellFunction="addSpell" :isUpdate="false" />
+          <AddSpell :spellFunction="addSpell" />
         </OverlayPanel>
       </template>
     </ToolBar>
-    <DataTable
-      :value="spells"
-      :paginator="true"
-      :rows="10"
-      class="shadow-8 p-datatable-sm"
-      responsiveLayout="scroll"
-    >
-      <Column header="Spell Name">
-        <template #body="record">
-          <div>{{ record.data.effectName }}</div>
-        </template>
-      </Column>
-      <Column header="Duration">
-        <template #body="record">
-          <div>
-            {{ `${record.data.durationTime} ${record.data.durationType}` }}
-          </div>
-        </template>
-      </Column>
-      <Column header="Targets" field="characterIds" class="column-large-screen">
-        <template #body="{ index }">
-          <Button
-            type="button"
-            label="Targets"
-            @click="(e) => togglePickList(e, index)"
-            class="p-button-sm"
-          />
-          <OverlayPanel
-            ref="pickListRef"
-            :showCloseIcon="true"
-            :dismissable="true"
-          >
-            <SpellRecord
-              :characterIds="pickListTargets"
-              :index="pickListIndex"
+    <SpellInitialize v-slot="{ spellData }">
+      <DataTable
+        :value="spellData"
+        :paginator="true"
+        :rows="10"
+        class="shadow-8 p-datatable-sm"
+        responsiveLayout="scroll"
+      >
+        <Column header="Spell Name">
+          <template #body="record">
+            <div>{{ record.data.effectName }}</div>
+          </template>
+        </Column>
+        <Column header="Duration">
+          <template #body="record">
+            <div>
+              {{ `${record.data.durationTime} ${record.data.durationType}` }}
+            </div>
+          </template>
+        </Column>
+        <Column
+          header="Targets"
+          field="characterIds"
+          class="column-large-screen"
+        >
+          <template #body="{ index }">
+            <Button
+              type="button"
+              label="Targets"
+              @click="(e) => togglePickList(e, index)"
+              class="p-button-sm"
             />
-          </OverlayPanel>
-        </template>
-      </Column>
-      <Column header="Edit/Delete" class="column-large-screen">
-        <template #body="{ data, index }">
-          <Button
-            icon="pi pi-pencil"
-            class="p-button-rounded p-button-success mr-2"
-            @click="modalOpen(data, index)"
-          />
-          <Button
-            icon="pi pi-trash"
-            class="p-button-rounded p-button-danger"
-            @click="() => store.removeSpell(index, data.id, true)"
-          />
-        </template>
-      </Column>
-      <Column header="Spell Options" class="column-small-screen">
-        <template #body="{ data, index }">
-          <SpellActions
-            :spellData="data"
-            :index="index"
-            :modalOpen="modalOpen"
-          ></SpellActions>
-        </template>
-      </Column>
-    </DataTable>
+            <OverlayPanel
+              ref="pickListRef"
+              :showCloseIcon="true"
+              :dismissable="true"
+            >
+              <SpellRecord
+                :characterIds="pickListTargets"
+                :index="pickListIndex"
+              />
+            </OverlayPanel>
+          </template>
+        </Column>
+        <Column header="Edit/Delete" class="column-large-screen">
+          <template #body="{ data, index }">
+            <Button
+              icon="pi pi-pencil"
+              class="p-button-rounded p-button-success mr-2"
+              @click="modalOpen(data, index)"
+            />
+            <Button
+              icon="pi pi-trash"
+              class="p-button-rounded p-button-danger"
+              @click="() => store.removeSpell(index, data.id, true)"
+            />
+          </template>
+        </Column>
+        <Column header="Spell Options" class="column-small-screen">
+          <template #body="{ data, index }">
+            <SpellActions
+              :spellData="data"
+              :index="index"
+              :modalOpen="modalOpen"
+            ></SpellActions>
+          </template>
+        </Column>
+      </DataTable>
+    </SpellInitialize>
     <Dialog
       v-model:visible="editSpell"
       :style="{ width: '450px' }"
@@ -94,7 +105,6 @@
     >
       <AddSpell
         :spellFunction="store.updateSpell"
-        :isUpdate="true"
         :spell="recordValue"
         :index="indexValue"
       ></AddSpell>
@@ -113,7 +123,7 @@ import {
   computed,
 } from "vue";
 import AddSpell from "./AddSpell.vue";
-import { IStore } from "../../../data/types";
+import { IStore, SpellStoreInterface } from "../../../data/types";
 import { SpellObject } from "../../../Interfaces/initiative";
 import Button from "primevue/button";
 import OverlayPanel from "primevue/overlaypanel";
@@ -128,8 +138,9 @@ import Toast from "primevue/toast";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Dialog from "primevue/dialog";
-import TieredMenu from "primevue/tieredmenu";
 import SpellActions from "./SpellActions.vue";
+import ResetStore from "../ResetStore.vue";
+import SpellInitialize from "./SpellInitialize.vue";
 
 export default defineComponent({
   name: "SpellList",
@@ -145,6 +156,8 @@ export default defineComponent({
     SpellRecord,
     Dialog,
     SpellActions,
+    ResetStore,
+    SpellInitialize,
   },
   setup() {
     interface CharacterInterface {
@@ -152,6 +165,17 @@ export default defineComponent({
       characterName: string;
     }
     const store = inject<IStore>("store");
+    const spellStore = inject<SpellStoreInterface>("spellStore");
+
+    if (store === undefined || spellStore === undefined) {
+      serverLogger(
+        LoggingTypes.alert,
+        `Failed to inject store`,
+        ComponentEnums.SPELLSTATE
+      );
+      throw new Error("Failed to inject store");
+    }
+
     const loading = ref(true);
     const op = ref(null);
     const pickListRef = ref(null);
@@ -164,21 +188,16 @@ export default defineComponent({
     const indexValue = ref(0);
     const tierMenuRef = ref();
 
-    if (store === undefined) {
-      serverLogger(
-        LoggingTypes.alert,
-        `Failed to inject store`,
-        ComponentEnums.SPELLSTATE
-      );
-      throw new Error("Failed to inject store");
-    }
+    const spellGetters = spellStore.SPELL_FUNCS.GETTERS;
+    const spellSetters = spellStore.SPELL_FUNCS.SETTERS;
+    const spellEmits = spellStore.SPELL_FUNCS.EMITS;
 
-    const spells = computed(() => store.getSpells());
+    const spells = ref(spellGetters.getSpells());
     onBeforeUnmount(() => {
       store?.resetSpells(false);
     });
     onMounted(() => {
-      store.getInitialSpells();
+      // spellEmits.getInitialSpells();
       serverLogger(
         LoggingTypes.info,
         `spells retrieved`,
@@ -279,6 +298,10 @@ export default defineComponent({
       pickListIndex,
       tierMenuRef,
       tieredToggle,
+      spellStore,
+      spellGetters,
+      spellSetters,
+      spellEmits,
     };
   },
 });

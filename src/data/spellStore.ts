@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { ref, Ref } from "vue";
 import { SpellObjectEnums } from "../Interfaces/ContextEnums";
 import { EmitTypes } from "../Interfaces/EmitTypes";
 import { InitiativeObject } from "../Interfaces/initiative";
@@ -17,25 +17,18 @@ const socket = getSocket();
 
 const SPELL_FUNCS = {
   GETTERS: {
-    getspells(): SpellObject[] {
-      return spellStore.value;
+    getSpells(): Ref<SpellObject[]> {
+      return spellStore;
+    },
+    getCharacterIds(index: number): CharacterStatusFirestore {
+      return spellStore.value[index].characterIds;
     },
   },
   SETTERS: {
-    resetSpells(emit: boolean): void {
+    resetSpells(): void {
+      console.log("resetting spells");
       spellStore.value = [];
       serverLogger(LoggingTypes.info, `spells reset`, StoreEnums.resetAll);
-      if (emit) {
-        serverLogger(
-          LoggingTypes.info,
-          `emitting ${EmitTypes.DELETE_ALL_SPELL}`,
-          StoreEnums.resetAll
-        );
-
-        const sessionId = getsessionId();
-
-        socket.emit(EmitTypes.DELETE_ALL_SPELL, sessionId);
-      }
     },
     updateAllSpells(data: SpellObject[]): void {
       spellStore.value = data;
@@ -153,7 +146,7 @@ const SPELL_FUNCS = {
       }
       return spellStore.value[index];
     },
-    addStatusEffects(index: number) {
+    addStatusEffects(index: number): void {
       serverLogger(
         LoggingTypes.debug,
         `adding spell effect to all characters`,
@@ -162,7 +155,7 @@ const SPELL_FUNCS = {
       );
       const initiativeTemp =
         initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
-      initiativeTemp.forEach((init: InitiativeObject) => {
+      initiativeTemp.value.forEach((init: InitiativeObject) => {
         init.statusEffects.push({
           spellName: spellStore.value[index].effectName,
           id: spellStore.value[index].id,
@@ -170,10 +163,10 @@ const SPELL_FUNCS = {
         });
       });
       initiativeStore.INITIATIVE_FUNCS.SETTERS.updateAllInitiative(
-        initiativeTemp
+        initiativeTemp.value
       );
     },
-    removeStatusEffects(spellIndex: number) {
+    removeStatusEffects(spellIndex: number): void {
       serverLogger(
         LoggingTypes.debug,
         `removing spell effect from all characters`,
@@ -183,7 +176,7 @@ const SPELL_FUNCS = {
       const initiativeTemp =
         initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
 
-      for (const record of initiativeTemp) {
+      for (const record of initiativeTemp.value) {
         const statusIndex = findIndexById(
           record.statusEffects,
           spellStore.value[spellIndex].id
@@ -209,13 +202,13 @@ const SPELL_FUNCS = {
         `adding spell effect to one character`,
         StoreEnums.addStatusEffect
       );
-      intiativeTemp[characterIndex].statusEffects.push({
+      intiativeTemp.value[characterIndex].statusEffects.push({
         spellName: spellName,
         id: spellId,
         effectDescription: effectDescription,
       });
       initiativeStore.INITIATIVE_FUNCS.SETTERS.updateCharacterRecord(
-        intiativeTemp[characterIndex]
+        intiativeTemp.value[characterIndex]
       );
     },
     removeStatusEffect(spellId: string, characterIndex: number): void {
@@ -225,15 +218,15 @@ const SPELL_FUNCS = {
         LoggingTypes.debug,
         `removing spell effect from one character`,
         StoreEnums.removeStatusEffect,
-        initiativeTemp[characterIndex].id
+        initiativeTemp.value[characterIndex].id
       );
       const spellIndex = findIndexById(
-        initiativeTemp[characterIndex].statusEffects,
+        initiativeTemp.value[characterIndex].statusEffects,
         spellId
       );
-      initiativeTemp[characterIndex].statusEffects.splice(spellIndex, 1);
+      initiativeTemp.value[characterIndex].statusEffects.splice(spellIndex, 1);
       initiativeStore.INITIATIVE_FUNCS.SETTERS.updateCharacterRecord(
-        initiativeTemp[characterIndex]
+        initiativeTemp.value[characterIndex]
       );
     },
     changeAllCharacterToTarget(index: number): void {
@@ -299,7 +292,7 @@ const SPELL_FUNCS = {
         const characterId = e.items[0].characterId;
         const initiativeTemp =
           initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
-        const characterIndex = findIndexById(initiativeTemp, characterId);
+        const characterIndex = findIndexById(initiativeTemp.value, characterId);
         serverLogger(
           LoggingTypes.info,
           `changing one character status. moveTo: ${moveTo}`,
@@ -332,7 +325,7 @@ const SPELL_FUNCS = {
         const characterId = e.items[0].characterId;
         const initiativeTemp =
           initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
-        const characterIndex = findIndexById(initiativeTemp, characterId);
+        const characterIndex = findIndexById(initiativeTemp.value, characterId);
         serverLogger(
           LoggingTypes.info,
           `changing one character status. moveTo: ${moveTo}`,
@@ -390,7 +383,8 @@ const SPELL_FUNCS = {
           StoreEnums.getInitialSpells
         );
         try {
-          spellStore.value = spells;
+          SPELL_FUNCS.SETTERS.updateAllSpells(spells);
+          console.log(spellStore.value);
         } catch (error) {
           if (error instanceof Error) {
             serverLogger(
@@ -432,6 +426,12 @@ const SPELL_FUNCS = {
         payload: spell,
         sessionId: getsessionId(),
         docId: spell.id,
+      });
+    },
+    emitUpdateAllSpells(): void {
+      socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
+        payload: spellStore.value,
+        sessionId: getsessionId(),
       });
     },
   },

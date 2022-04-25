@@ -38,7 +38,7 @@ export interface CharacterPickListEvent extends PickListMoveAllToSourceEvent {
   items: CharacterStatus[];
 }
 
-export interface RollStore {
+export interface RollStoreInterface {
   rollData: Ref<RollObject[]>;
   ROLL_FUNCS: {
     GETTERS: {
@@ -57,6 +57,50 @@ export interface RollStore {
       emitAddRoll: (data: RollObject) => void;
       emitUpdateRoll: (data: RollObject) => void;
       discordRoll: (toRoll: DiceRoll, comment: string) => void;
+    };
+  };
+}
+
+export interface SpellStoreInterface {
+  spellData: Ref<SpellObject[]>;
+  SPELL_FUNCS: {
+    GETTERS: {
+      getSpells: () => SpellObject[];
+    };
+    SETTERS: {
+      addSpell: (data: any) => void;
+      updateSpell: (
+        effectName: string,
+        effectDescription: string,
+        durationTime: number,
+        durationType: string,
+        index: number,
+        emit: boolean,
+        characterIds?: CharacterStatusFirestore
+      ) => void;
+      initializeCharacterIDS(
+        spellData: SpellObject,
+        initiativeList: InitiativeObject[]
+      ): SpellObject;
+      changeAllCharacterToTarget: (index: number) => void;
+      changeAllCharacterToSource: (index: number) => void;
+      changeOneCharacterToTarget: (
+        e: CharacterPickListEvent,
+        index: number
+      ) => void;
+      changeOneCharacterToSource: (
+        e: CharacterPickListEvent,
+        index: number
+      ) => void;
+      removeSpell: (index: number, id: string, emit: boolean) => void;
+      resetSpells: () => void;
+    };
+    EMITS: {
+      getInitialSpells: () => void;
+      emitDeleteSpell: (id: string) => void;
+      emitNewSpell: (spell: SpellObject) => void;
+      emitUpdateSpell: (spell: SpellObject) => void;
+      emitUpdateAllSpells: () => void;
     };
   };
 }

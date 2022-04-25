@@ -188,7 +188,6 @@ const getInitialRolls = (): void => {
     sessionData.sessionId,
     (query: RollObject[]) => {
       sessionData.rolls = query;
-      console.log(query);
       serverLogger(
         LoggingTypes.info,
         `initiative store updated`,

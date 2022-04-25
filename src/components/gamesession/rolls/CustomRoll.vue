@@ -6,7 +6,7 @@ import Button from "primevue/button";
 import RollIcon from "./RollIcon.vue";
 import Dialog from "primevue/dialog";
 import { computed, inject, ref } from "vue";
-import { IStore, RollStore } from "../../../data/types";
+import { IStore, RollStoreInterface } from "../../../data/types";
 import { ComponentEnums, LoggingTypes } from "../../../Interfaces/LoggingTypes";
 import serverLogger from "../../../Utils/LoggingClass";
 import { useToast } from "primevue/usetoast";
@@ -14,7 +14,7 @@ import { isError } from "../../typeChecking";
 import RollForm from "./RollForm.vue";
 
 const store = inject<IStore>("store");
-const rollData = inject<RollStore>("rollData");
+const rollData = inject<RollStoreInterface>("rollData");
 const toast = useToast();
 
 if (store === undefined || rollData === undefined) {

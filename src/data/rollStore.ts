@@ -1,5 +1,5 @@
 import { DiceRoll } from "@dice-roller/rpg-dice-roller";
-import { ref } from "vue";
+import { ref, Ref } from "vue";
 import { EmitTypes } from "../Interfaces/EmitTypes";
 import { LoggingTypes, StoreEnums } from "../Interfaces/LoggingTypes";
 import { RollObject } from "../Interfaces/Rolls";
@@ -13,8 +13,8 @@ const socket = getSocket();
 
 const ROLL_FUNCS = {
   GETTERS: {
-    getRolls(): RollObject[] {
-      return rollData.value;
+    getRolls(): Ref<RollObject[]> {
+      return rollData;
     },
     rollDice(diceRoll: string): DiceRoll {
       const newRoll = new DiceRoll(diceRoll);
@@ -65,7 +65,6 @@ const ROLL_FUNCS = {
     updateRoll(rollName: string, rollValue: string, index: number): void {
       rollData.value[index].rollName = rollName;
       rollData.value[index].rollValue = rollValue;
-      console.log(rollData.value[index]);
     },
     deleteRoll(index: number): void {
       rollData.value.splice(index, 1);

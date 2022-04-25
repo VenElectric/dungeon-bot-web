@@ -37,6 +37,11 @@
             @click="(e) => confirm1(e)"
             class="p-button-sm"
           />
+          <!-- <ResetStore
+            label="Spells"
+            :resetFunc="store.resetInitiative"
+            :emitFunc="store."
+          /> -->
           <Button
             type="button"
             label="Add Initiative"
@@ -88,7 +93,7 @@ import OverlayPanel from "primevue/overlaypanel";
 import ToolBar from "primevue/toolbar";
 import Button from "primevue/button";
 import Skeleton from "primevue/skeleton";
-import { IStore, RollStore } from "../../../data/types";
+import { IStore, RollStoreInterface } from "../../../data/types";
 import SortableList from "./SortableList.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -99,6 +104,7 @@ import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import InitiativeData from "./InitiativeData.vue";
 import { InitiativeObject } from "@/src/Interfaces/initiative";
 import TieredMenu from "primevue/tieredmenu";
+import ResetStore from "../ResetStore.vue";
 
 export default defineComponent({
   name: "InitiativeState",
@@ -115,7 +121,7 @@ export default defineComponent({
   },
   setup() {
     const store = inject<IStore>("store");
-    const rollData = inject<RollStore>("rollData");
+    const rollData = inject<RollStoreInterface>("rollData");
     const loading = ref(true);
     const isSorted = computed({
       get() {
