@@ -1,12 +1,11 @@
 import { effect, reactive } from "vue";
+import { InitiativeObject, StatusEffect } from "../Interfaces/initiative";
 import {
-  CharacterStatus,
-  InitiativeObject,
   SpellObject,
-  StatusEffect,
-  CharacterStatusFirestore,
   ServerSpellObject,
-} from "../Interfaces/initiative";
+  CharacterStatus,
+  CharacterStatusFirestore,
+} from "../Interfaces/Spells";
 import {
   CollectionTypes,
   InitiativeObjectEnums,
@@ -25,7 +24,7 @@ import serverLogger from "../Utils/LoggingClass";
 import { StoreEnums, LoggingTypes } from "../Interfaces/LoggingTypes";
 import { RollObject } from "../Interfaces/Rolls";
 
-const socketString = "http://localhost:8000";
+const socketString = "http://localhost:5000";
 const productionString = "https://dungeon-bot-server.herokuapp.com";
 
 const sessionData = reactive({
@@ -132,7 +131,7 @@ const updateAll = (
         `update complete ${collectionType}`,
         StoreEnums.updateAll
       );
-      sessionData.spells = data;
+      sessionData.spells = data as SpellObject[];
     }
   }
 };
@@ -394,7 +393,7 @@ const addCharacter = (data: InitiativeObject): void => {
     sessionData.spells.forEach((spell: SpellObject) => {
       spell.characterIds.source.push({
         characterName: data.characterName,
-        characterId: data.id,
+        id: data.id,
       });
     });
 
@@ -489,10 +488,10 @@ const removeCharacter = (index: number, id: string, emit: boolean): void => {
 const removeCharacterFromSpells = (characterId: string): void => {
   for (const [spellIndex, spell] of sessionData.spells.entries()) {
     const indexZero = spell.characterIds.source
-      .map((item: CharacterStatus) => item.characterId)
+      .map((item: CharacterStatus) => item.id)
       .indexOf(characterId);
     const indexOne = spell.characterIds.target
-      .map((item: CharacterStatus) => item.characterId)
+      .map((item: CharacterStatus) => item.id)
       .indexOf(characterId);
     const finalIndex = indexZero != -1 ? indexZero : indexOne;
     if (indexZero != -1 && indexOne == -1) {
@@ -588,7 +587,7 @@ const addSpell = (data: any): void => {
     sessionData.initiativeList.forEach((item: InitiativeObject) => {
       newData.characterIds.source.push({
         characterName: item.characterName,
-        characterId: item.id,
+        id: item.id,
       });
     });
   } else {
@@ -982,7 +981,7 @@ const changeOneCharacterToSource = (
   index: number
 ): void => {
   try {
-    const characterId = e.items[0].characterId;
+    const characterId = e.items[0].id;
     const characterIndex = sessionData.initiativeList
       .map((item: InitiativeObject) => item.id)
       .indexOf(characterId);
@@ -993,8 +992,8 @@ const changeOneCharacterToSource = (
       characterId
     );
     const spellIndex = sessionData.spells[index].characterIds.target
-      .map((item: CharacterStatus) => item.characterId)
-      .indexOf(e.items[0].characterId);
+      .map((item: CharacterStatus) => item.id)
+      .indexOf(e.items[0].id);
     sessionData.spells[index].characterIds.source.push(
       sessionData.spells[index].characterIds.target[spellIndex]
     );
@@ -1039,7 +1038,7 @@ const changeOneCharacterToTarget = (
   index: number
 ): void => {
   try {
-    const characterId = e.items[0].characterId;
+    const characterId = e.items[0].id;
     const characterIndex = sessionData.initiativeList
       .map((item: InitiativeObject) => item.id)
       .indexOf(characterId);
@@ -1050,8 +1049,8 @@ const changeOneCharacterToTarget = (
       characterId
     );
     const spellIndex = sessionData.spells[index].characterIds.source
-      .map((item: CharacterStatus) => item.characterId)
-      .indexOf(e.items[0].characterId);
+      .map((item: CharacterStatus) => item.id)
+      .indexOf(e.items[0].id);
     sessionData.spells[index].characterIds.target.push(
       sessionData.spells[index].characterIds.source[spellIndex]
     );

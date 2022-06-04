@@ -1,5 +1,4 @@
 <template>
-  <SocketReceiver />
   <Toolbar class="shadow-8">
     <template #start>
       <Toast />
@@ -32,25 +31,25 @@
     <!-- Initiative List -->
     <div class="flex flex-column column-container md:col-4">
       <h1>Initiative List</h1>
-      <InitiativeState></InitiativeState>
+      <InitiativeInitialize />
     </div>
     <!-- Spell List -->
 
     <div class="flex flex-column column-container md:col-4">
       <h1>Spell List</h1>
-      <SpellState></SpellState>
+      <SpellInitialize />
     </div>
   </div>
   <div class="session-small mt-4">
     <TabView>
       <TabPanel header="Initiative">
         <div class="flex flex-column column-container">
-          <InitiativeState />
+          <InitiativeInitialize />
         </div>
       </TabPanel>
       <TabPanel header="Spells">
         <div class="flex flex-column column-container">
-          <SpellState />
+          <SpellInitialize />
         </div>
       </TabPanel>
     </TabView>
@@ -67,11 +66,9 @@
 <script lang="ts">
 import { defineComponent, ref, inject, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import InitiativeState from "../components/gamesession/initiative/InitiativeState.vue";
 import Toolbar from "primevue/toolbar";
 import Button from "primevue/button";
 import { IStore } from "../data/types";
-import SpellState from "../components/gamesession/spells/SpellState.vue";
 import { CollectionTypes } from "../Interfaces/ContextEnums";
 import SocketReceiver from "../components/gamesession/SocketReceiver.vue";
 import { useConfirm } from "primevue/useconfirm";
@@ -84,7 +81,11 @@ import TabView from "primevue/tabview";
 import TabPanel from "primevue/tabpanel";
 import Dialog from "primevue/dialog";
 import CustomRoll from "../components/gamesession/rolls/CustomRoll.vue";
-import { updateId } from "../data/sessionStore";
+import { updateId, roomSetup } from "../data/sessionStore";
+import SpellInitialize from "../components/gamesession/spells/SpellInitialize.vue";
+import InitiativeInitialize from "../components/gamesession/initiative/InitiativeInitialize.vue";
+import SPELL_FUNCS from "../data/spellStore";
+import INITIATIVE_FUNCS from "../data/initiativeStore";
 
 // css to make columns instead of rows for each item (init, spell, info)
 export default defineComponent({
@@ -92,26 +93,23 @@ export default defineComponent({
   components: {
     Toolbar,
     Button,
-    InitiativeState,
-    SpellState,
-    SocketReceiver,
     ConfirmPopup,
     Toast,
     TabView,
     TabPanel,
     Dialog,
     CustomRoll,
+    SpellInitialize,
+    InitiativeInitialize,
   },
   setup() {
     const route = useRoute();
     const store = inject<IStore>("store");
-    const message = ref();
     const display = ref(false);
     const confirm = useConfirm();
     const toast = useToast();
     const paramsId = String(route.params.id);
-    if (store && paramsId) {
-      store.updateId(paramsId);
+    if (paramsId) {
       updateId(paramsId);
       serverLogger(
         LoggingTypes.debug,
@@ -119,14 +117,6 @@ export default defineComponent({
         ComponentEnums.GAMESESSION,
         paramsId
       );
-    }
-    if (store === undefined) {
-      serverLogger(
-        LoggingTypes.alert,
-        `Failed to inject store`,
-        ComponentEnums.GAMESESSION
-      );
-      throw new Error("Failed to inject store");
     }
     let op = ref(null);
 
@@ -145,7 +135,7 @@ export default defineComponent({
       );
     }
     function initiativeMessage() {
-      store?.toDiscord(CollectionTypes.INITIATIVE);
+      // INITIATIVE_FUNCS.EMITS.toDiscord(CollectionTypes.INITIATIVE);
       toast.add({
         severity: "success",
         summary: "Success Message",
@@ -174,7 +164,10 @@ export default defineComponent({
             `Adding toast and resetting game session`,
             ComponentEnums.GAMESESSION
           );
-          store.resetAll(true);
+          INITIATIVE_FUNCS.SETTERS.resetInitiative();
+          SPELL_FUNCS.SETTERS.resetSpells();
+          INITIATIVE_FUNCS.EMITS.emitResetInitiative();
+          SPELL_FUNCS.EMITS.emitResetSpells();
           toast.add({
             severity: "info",
             summary: "Confirmed",
@@ -200,8 +193,7 @@ export default defineComponent({
 
     onMounted(() => {
       if (paramsId !== undefined) {
-        store.roomSetup();
-        store.getInitialRolls();
+        roomSetup();
         serverLogger(
           LoggingTypes.info,
           `Onmounted, sending emit to create room`,

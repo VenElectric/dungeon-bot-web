@@ -16,3 +16,12 @@ export interface SpellObject {
   id: string;
   characterIds: CharacterStatusFirestore;
 }
+
+export interface ServerSpellObject {
+  durationTime: number;
+  durationType: string;
+  effectName: string;
+  effectDescription: string;
+  id: string;
+  characterIds: CharacterStatusFirestore;
+}

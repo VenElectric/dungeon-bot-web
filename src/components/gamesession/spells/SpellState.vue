@@ -1,311 +1,121 @@
-<template>
-  <div v-if="!loading" class="w-auto">
-    <Toast />
-    <ConfirmPopup></ConfirmPopup>
-    <ToolBar class="shadow-8">
-      <template #start>
-        <!-- <Button
-          type="button"
-          label="Clear Spells"
-          @click="(e) => confirm1(e)"
-          class="p-button-sm"
-        /> -->
-        <ResetStore
-          label="Spells"
-          :resetFunc="spellSetters.resetSpells"
-          :emitFunc="spellEmits.emitUpdateAllSpells"
-        />
-      </template>
-      <template #end>
-        <Button
-          type="button"
-          label="Add Spell"
-          @click="toggle"
-          class="p-button-sm"
-        />
-        <OverlayPanel ref="op" :showCloseIcon="true" :dismissable="true">
-          <AddSpell :spellFunction="addSpell" />
-        </OverlayPanel>
-      </template>
-    </ToolBar>
-    <SpellInitialize v-slot="{ spellData }">
-      <DataTable
-        :value="spellData"
-        :paginator="true"
-        :rows="10"
-        class="shadow-8 p-datatable-sm"
-        responsiveLayout="scroll"
-      >
-        <Column header="Spell Name">
-          <template #body="record">
-            <div>{{ record.data.effectName }}</div>
-          </template>
-        </Column>
-        <Column header="Duration">
-          <template #body="record">
-            <div>
-              {{ `${record.data.durationTime} ${record.data.durationType}` }}
-            </div>
-          </template>
-        </Column>
-        <Column
-          header="Targets"
-          field="characterIds"
-          class="column-large-screen"
-        >
-          <template #body="{ index }">
-            <Button
-              type="button"
-              label="Targets"
-              @click="(e) => togglePickList(e, index)"
-              class="p-button-sm"
-            />
-            <OverlayPanel
-              ref="pickListRef"
-              :showCloseIcon="true"
-              :dismissable="true"
-            >
-              <SpellRecord
-                :characterIds="pickListTargets"
-                :index="pickListIndex"
-              />
-            </OverlayPanel>
-          </template>
-        </Column>
-        <Column header="Edit/Delete" class="column-large-screen">
-          <template #body="{ data, index }">
-            <Button
-              icon="pi pi-pencil"
-              class="p-button-rounded p-button-success mr-2"
-              @click="modalOpen(data, index)"
-            />
-            <Button
-              icon="pi pi-trash"
-              class="p-button-rounded p-button-danger"
-              @click="() => store.removeSpell(index, data.id, true)"
-            />
-          </template>
-        </Column>
-        <Column header="Spell Options" class="column-small-screen">
-          <template #body="{ data, index }">
-            <SpellActions
-              :spellData="data"
-              :index="index"
-              :modalOpen="modalOpen"
-            ></SpellActions>
-          </template>
-        </Column>
-      </DataTable>
-    </SpellInitialize>
-    <Dialog
-      v-model:visible="editSpell"
-      :style="{ width: '450px' }"
-      header="Edit Spell"
-      :modal="true"
-    >
-      <AddSpell
-        :spellFunction="store.updateSpell"
-        :spell="recordValue"
-        :index="indexValue"
-      ></AddSpell>
-    </Dialog>
-  </div>
-  <div v-else>Loading...</div>
-</template>
-
-<script lang="ts">
-import {
-  defineComponent,
-  inject,
-  ref,
-  onMounted,
-  onBeforeUnmount,
-  computed,
-} from "vue";
-import AddSpell from "./AddSpell.vue";
-import { IStore, SpellStoreInterface } from "../../../data/types";
-import { SpellObject } from "../../../Interfaces/initiative";
-import Button from "primevue/button";
-import OverlayPanel from "primevue/overlaypanel";
-import ToolBar from "primevue/toolbar";
-import SpellRecord from "./SpellRecord.vue";
-import serverLogger from "../../../Utils/LoggingClass";
-import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
-import { useConfirm } from "primevue/useconfirm";
-import { useToast } from "primevue/usetoast";
+<script setup lang="ts">
+import { defineProps, ref, onBeforeUnmount, PropType } from "vue";
+import { SpellStoreInterface } from "../../../data/types";
+import { SpellObject } from "../../../Interfaces/Spells";
+import SpellTargets from "./SpellTargets.vue";
 import ConfirmPopup from "primevue/confirmpopup";
 import Toast from "primevue/toast";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
-import Dialog from "primevue/dialog";
-import SpellActions from "./SpellActions.vue";
-import ResetStore from "../ResetStore.vue";
-import SpellInitialize from "./SpellInitialize.vue";
+import SpellMobileMenu from "./SpellMobileMenu.vue";
+import EditDeleteButtons from "../EditDeleteButtons.vue";
+import ActionsToolbar from "./ActionsToolbar.vue";
+import { ComponentIs } from "../componentTypes";
+import OverlayPanel from "primevue/overlaypanel";
+import Button from "primevue/button";
+import MobileMenu from "./MobileMenu.vue";
+import { ReturnTypes } from "../MenuItemSetup";
 
-export default defineComponent({
-  name: "SpellList",
-  components: {
-    AddSpell,
-    Button,
-    OverlayPanel,
-    ToolBar,
-    Toast,
-    ConfirmPopup,
-    DataTable,
-    Column,
-    SpellRecord,
-    Dialog,
-    SpellActions,
-    ResetStore,
-    SpellInitialize,
+const props = defineProps({
+  spellSetters: {
+    type: Object as PropType<SpellStoreInterface["SETTERS"]>,
+    required: true,
   },
-  setup() {
-    interface CharacterInterface {
-      characterId: string;
-      characterName: string;
-    }
-    const store = inject<IStore>("store");
-    const spellStore = inject<SpellStoreInterface>("spellStore");
-
-    if (store === undefined || spellStore === undefined) {
-      serverLogger(
-        LoggingTypes.alert,
-        `Failed to inject store`,
-        ComponentEnums.SPELLSTATE
-      );
-      throw new Error("Failed to inject store");
-    }
-
-    const loading = ref(true);
-    const op = ref(null);
-    const pickListRef = ref(null);
-    const confirm = useConfirm();
-    const toast = useToast();
-    const editSpell = ref(false);
-    const pickListTargets = ref();
-    const pickListIndex = ref(0);
-    const recordValue = ref<SpellObject>({} as SpellObject);
-    const indexValue = ref(0);
-    const tierMenuRef = ref();
-
-    const spellGetters = spellStore.SPELL_FUNCS.GETTERS;
-    const spellSetters = spellStore.SPELL_FUNCS.SETTERS;
-    const spellEmits = spellStore.SPELL_FUNCS.EMITS;
-
-    const spells = ref(spellGetters.getSpells());
-    onBeforeUnmount(() => {
-      store?.resetSpells(false);
-    });
-    onMounted(() => {
-      // spellEmits.getInitialSpells();
-      serverLogger(
-        LoggingTypes.info,
-        `spells retrieved`,
-        ComponentEnums.SPELLSTATE
-      );
-      setTimeout(() => {
-        loading.value = false;
-        serverLogger(
-          LoggingTypes.info,
-          `adding characterids`,
-          ComponentEnums.SPELLSTATE
-        );
-      }, 500);
-    });
-
-    function toggle(event: any) {
-      (op.value as any).toggle(event);
-    }
-
-    function tieredToggle(event: any, data: SpellObject, index: number) {
-      pickListTargets.value = data.characterIds;
-      pickListIndex.value = index;
-      (tierMenuRef.value as any).toggle(event);
-    }
-
-    function togglePickList(event: any, index: number) {
-      pickListTargets.value = spells.value[index].characterIds;
-      pickListIndex.value = index;
-      (pickListRef.value as any).toggle(event);
-    }
-
-    function addSpell(event: any, data: any) {
-      toggle(event);
-      serverLogger(
-        LoggingTypes.info,
-        `adding new spell`,
-        ComponentEnums.SPELLSTATE
-      );
-      store?.addSpell(data);
-    }
-
-    const confirm1 = (event: any) => {
-      confirm.require({
-        target: event.currentTarget,
-        message: "Are you sure you want to proceed?",
-        icon: "pi pi-exclamation-triangle",
-        accept: () => {
-          serverLogger(
-            LoggingTypes.debug,
-            `Adding toast and resetting spells`,
-            ComponentEnums.SPELLSTATE
-          );
-          store.resetSpells(true);
-          toast.add({
-            severity: "info",
-            summary: "Confirmed",
-            detail: "Spell Reset Accepted",
-            life: 3000,
-          });
-        },
-        reject: () => {
-          serverLogger(
-            LoggingTypes.debug,
-            `Adding toast, rejected confirmation to reset spells`,
-            ComponentEnums.SPELLSTATE
-          );
-          toast.add({
-            severity: "error",
-            summary: "Rejected",
-            detail: "Spells Not Reset",
-            life: 3000,
-          });
-        },
-      });
-    };
-
-    function modalOpen(data: SpellObject, index: number) {
-      recordValue.value = data;
-      indexValue.value = index;
-      editSpell.value = true;
-    }
-
-    return {
-      store,
-      loading,
-      op,
-      toggle,
-      addSpell,
-      spells,
-      confirm1,
-      pickListRef,
-      togglePickList,
-      modalOpen,
-      editSpell,
-      recordValue,
-      indexValue,
-      pickListTargets,
-      pickListIndex,
-      tierMenuRef,
-      tieredToggle,
-      spellStore,
-      spellGetters,
-      spellSetters,
-      spellEmits,
-    };
+  spellGetters: {
+    type: Object as PropType<SpellStoreInterface["GETTERS"]>,
+    required: true,
+  },
+  spellEmits: {
+    type: Object as PropType<SpellStoreInterface["EMITS"]>,
+    required: true,
+  },
+  spellData: {
+    type: Object as PropType<SpellObject[]>,
+    required: true,
   },
 });
+
+const pickListRef = ref();
+
+function togglePickList(event: any) {
+  (pickListRef.value as any).toggle(event);
+}
+
+onBeforeUnmount(() => {
+  props.spellSetters.resetSpells();
+});
 </script>
+
+<template>
+  <div class="w-auto">
+    <toast />
+    <confirm-popup />
+    <actions-toolbar
+      :reset-spells="spellSetters.resetSpells"
+      :emit-update-all-spells="spellEmits.emitUpdateAllSpells"
+      :add-spell="spellSetters.addSpell"
+      :emit-add-spell="spellEmits.emitNewSpell"
+    ></actions-toolbar>
+    <DataTable
+      :value="spellData"
+      :paginator="true"
+      :rows="10"
+      class="shadow-8 p-datatable-sm"
+      responsiveLayout="scroll"
+    >
+      <Column header="Spell Name">
+        <template #body="record">
+          <div>{{ record.data.effectName }}</div>
+        </template>
+      </Column>
+      <Column header="Duration">
+        <template #body="record">
+          <div>
+            {{ `${record.data.durationTime} ${record.data.durationType}` }}
+          </div>
+        </template>
+      </Column>
+      <Column header="Targets" field="characterIds" class="column-large-screen">
+        <template #body="{ index }">
+          <Button
+            type="button"
+            label="Targets"
+            @click="(e) => togglePickList(e)"
+            class="p-button-sm"
+          />
+          <OverlayPanel
+            ref="pickListRef"
+            :showCloseIcon="true"
+            :dismissable="true"
+          >
+            <spell-targets :index="index"></spell-targets>
+          </OverlayPanel>
+        </template>
+      </Column>
+      <Column header="Edit/Delete" class="column-large-screen">
+        <template #body="{ index }">
+          <edit-delete-buttons
+            :delete-item="spellSetters.deleteSpell"
+            :index="index"
+            :get-record="spellGetters.getSpellbyIndex"
+            :save-function="spellSetters.updateSpell"
+            :componentType="ComponentIs.AddSpell"
+            :emit-delete-function="spellEmits.emitDeleteSpell"
+            :emit-save-function="spellEmits.emitUpdateSpell"
+          ></edit-delete-buttons>
+        </template>
+      </Column>
+      <Column header="Spell Options" class="column-small-screen">
+        <template #body="{ index }">
+          <mobile-menu
+            :index="index"
+            :component-type="ReturnTypes.SPELLS"
+          ></mobile-menu>
+        </template>
+      </Column>
+    </DataTable>
+  </div>
+</template>
 
 <style scoped>
 .table-header {

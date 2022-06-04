@@ -1,4 +1,5 @@
-import { InitiativeObject, SpellObject, SessionData } from "./initiative";
+import { InitiativeObject, SessionData } from "./initiative";
+import { SpellObject } from "./Spells";
 
 export enum InitiativeContextEnums {
   INITIAL_INIT = "INITIAL_INIT",

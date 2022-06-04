@@ -9,9 +9,9 @@
       <InputText
         id="spellName"
         type="text"
-        v-model="data.effectName"
+        v-model="record.effectName"
         placeholder="Spell Effect Name"
-        :model-value="data.effectName"
+        :model-value="record.effectName"
         @update:model-value="
           (e:any) => handleChange(e, SpellObjectEnums.effectName)
         "
@@ -27,7 +27,7 @@
       />
       <textarea
         placeholder="Spell Description..."
-        v-model="data.effectDescription"
+        v-model="record.effectDescription"
         @update="(e:any) => handleChange(e, SpellObjectEnums.effectDescription)"
         style="background: #17212f; color: rgba(255, 255, 255, 0.87)"
       >
@@ -42,8 +42,8 @@
         v-tooltip.top="'Select the effect duration number value.'"
       />
       <InputNumber
-        v-model="data.durationTime"
-        :model-value="data.durationTime"
+        v-model="record.durationTime"
+        :model-value="record.durationTime"
         @update:model-value="
           (e: any) => handleChange(e, SpellObjectEnums.durationTime)
         "
@@ -58,7 +58,7 @@
         v-tooltip.top="'Select the effect duration type.'"
       />
       <Dropdown
-        v-model="data.durationType"
+        v-model="record.durationType"
         :options="durationTypes"
         option-label="label"
         option-value="value"
@@ -72,11 +72,7 @@
   <Button
     label="Save"
     class="pi-button-primary m-2"
-    @click.prevent="
-      (e) => {
-        spellFunction(e, data);
-      }
-    "
+    @click.prevent="submitData"
   />
 </template>
 
@@ -87,26 +83,42 @@ import Dropdown from "primevue/dropdown";
 import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Button from "primevue/button";
-import { SpellObject } from "@/src/Interfaces/initiative";
+import { SpellObject } from "../../../Interfaces/Spells";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
+import { SpellStoreInterface } from "../../../data/types";
+import SPELL_FUNCS from "../../../data/spellStore";
+import INITIATIVE_FUNCS from "../../../data/initiativeStore";
 
 export default defineComponent({
   name: "AddSpell",
   components: { Dropdown, InputNumber, InputText, Button },
   props: {
-    spellFunction: { type: Function, required: true },
-    spell: { type: Object as PropType<SpellObject>, required: false },
     index: { type: Number, required: false },
+    toggle: { type: Function, required: false },
   },
   setup(props) {
-    let data = reactive({
-      effectName: props.spell ? props.spell.effectName : "",
-      effectDescription: props.spell ? props.spell.effectDescription : "",
-      durationTime: props.spell ? props.spell.durationTime : 0,
-      durationType: props.spell ? props.spell.durationType : "",
-      index: props.index ? props.index : 0,
+    const {
+      GETTERS: spellGetters,
+      SETTERS: spellSetters,
+      EMITS: spellEmits,
+    } = SPELL_FUNCS;
+    const {
+      GETTERS: initGetters,
+      SETTERS: initSetters,
+      EMITS: initEmits,
+    } = INITIATIVE_FUNCS;
+    const record = ref<SpellObject>({
+      id: "",
+      effectName: "",
+      effectDescription: "",
+      durationTime: 0,
+      durationType: "",
+      characterIds: { target: [], source: [] },
     });
+    if (props.index !== undefined) {
+      record.value = spellGetters.getSpellbyIndex(props.index);
+    }
     const durationTypes = ref([
       { label: "Rounds", value: "Rounds" },
       { label: "Minutes", value: "Minutes" },
@@ -114,37 +126,55 @@ export default defineComponent({
       { label: "Days", value: "Days" },
     ]);
 
-    serverLogger(
-      LoggingTypes.info,
-      `created`,
-      ComponentEnums.ADDSPELL,
-      props?.spell?.id
-    );
+    serverLogger(LoggingTypes.info, `created`, ComponentEnums.ADDSPELL);
+
+    function submitData() {
+      if (props.index !== undefined) {
+        spellSetters.updateSpell(record.value);
+        spellEmits.emitUpdateSpell(record.value);
+      } else {
+        const initTemp = initGetters.getInitiative();
+        const spellData = spellSetters.initializeCharacterIDS(
+          record.value,
+          initTemp.value
+        );
+        spellSetters.addSpell(spellData);
+        spellEmits.emitNewSpell(spellData);
+      }
+      if (props.toggle !== undefined) {
+        props.toggle();
+      }
+    }
 
     function handleChange(e: any, ObjectType: SpellObjectEnums) {
       serverLogger(
         LoggingTypes.debug,
         `updating ${ObjectType} value: ${e}`,
-        ComponentEnums.ADDSPELL,
-        props?.spell?.id
+        ComponentEnums.ADDSPELL
       );
       switch (ObjectType) {
         case SpellObjectEnums.effectName:
-          data.effectName = e;
+          record.value.effectName = e;
           break;
         case SpellObjectEnums.effectDescription:
-          data.effectDescription = e;
+          record.value.effectDescription = e;
           break;
         case SpellObjectEnums.durationType:
-          data.durationType = e;
+          record.value.durationType = e;
           console.log(e);
           break;
         case SpellObjectEnums.durationTime:
-          data.durationTime = e;
+          record.value.durationTime = e;
           break;
       }
     }
-    return { data, handleChange, SpellObjectEnums, durationTypes };
+    return {
+      record,
+      handleChange,
+      submitData,
+      SpellObjectEnums,
+      durationTypes,
+    };
   },
 });
 </script>

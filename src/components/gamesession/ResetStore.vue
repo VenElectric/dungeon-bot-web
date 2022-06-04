@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import Button from "primevue/button";
-import { defineProps, ref } from "vue";
+import { defineProps, ref, PropType } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useConfirm } from "primevue/useconfirm";
 import serverLogger from "../../Utils/LoggingClass";
-import { LoggingTypes, ComponentEnums } from "../../Interfaces/LoggingTypes";
+import { LoggingTypes } from "../../Interfaces/LoggingTypes";
 
 const confirm = useConfirm();
 const toast = useToast();
 
 const props = defineProps({
-  label: { type: String, required: true },
-  resetFunc: { type: Function, required: true },
-  emitFunc: { type: Function, required: true },
+  label: {
+    type: String,
+    required: true,
+    validator(value: string) {
+      return ["Spells", "Initiative"].includes(value);
+    },
+  },
+  resetFunc: { type: Function as PropType<() => void>, required: true },
+  emitFunc: { type: Function as PropType<() => void>, required: true },
 });
 
 const buttonLabel = ref(`Clear ${props.label}`);

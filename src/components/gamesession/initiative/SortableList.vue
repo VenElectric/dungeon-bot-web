@@ -1,7 +1,7 @@
 <template>
   <DataTable
     :value="reactiveList"
-    @row-reorder="reOrderInitiative"
+    @row-reorder="initSetters.onDrop"
     :paginator="true"
     :rows="10"
     class="shadow-8 p-datatable-sm"
@@ -14,8 +14,13 @@
       class="column-large-screen"
     ></Column>
     <Column header="Current Turn" field="isCurrent" class="column-large-screen">
-      <template #body="{ data, field, index }">
-        <Button
+      <template #body="{ index }">
+        <current-button
+          :index="index"
+          :setCurrent="initSetters.setCurrent"
+          :getCurrent="initGetters.getCurrent"
+        />
+        <!-- <Button
           v-if="data[field]"
           icon="pi pi-arrow-circle-right"
           class="p-button-raised p-button-rounded p-mr-3 p-button-success"
@@ -26,7 +31,7 @@
           v-tooltip.top="'Click to set this record as the current turn.'"
           class="p-button-raised p-button-rounded p-mr-3 p-button-danger"
           @click.prevent="() => store.setCurrent(index)"
-        />
+        /> -->
       </template>
     </Column>
     <Column header="Re-Order" class="column-small-screen">
@@ -34,12 +39,12 @@
         <div class="flex flex-row">
           <Button
             icon="pi pi-arrow-up"
-            @click="store.moveUp(index)"
+            @click="initSetters.moveUp(index)"
             class="p-button-sm"
           ></Button>
           <Button
             icon="pi pi-arrow-down"
-            @click="store.moveDown(index)"
+            @click="initSetters.moveDown(index)"
             class="p-button-sm"
           ></Button>
         </div>
@@ -54,13 +59,17 @@
       header="Actions"
       class="column-small-screen center-button text-center w-auto"
     >
-      <template #body="{ data, index }">
+      <template #body="{ index }">
         <div class="flex justify-content-center">
-          <CharacterActions
+          <mobile-menu
+            :index="index"
+            :componentType="ReturnTypes.INITIATIVE"
+          ></mobile-menu>
+          <!-- <CharacterActions
             :characterData="data"
             :index="index"
             :modalOpen="modalOpen"
-          ></CharacterActions>
+          ></CharacterActions> -->
         </div>
       </template>
     </Column>
@@ -74,8 +83,17 @@
       </template>
     </Column>
     <Column header="Edit/Delete" class="column-large-screen">
-      <template #body="{ data, index }">
-        <Button
+      <template #body="{ index }">
+        <edit-delete-buttons
+          :deleteItem="initSetters.deleteInitiative"
+          :index="index"
+          :getRecord="initGetters.getRecord"
+          :emitDeleteFunction="initEmits.deleteOneInitiative"
+          :emitSaveFunction="initEmits.updateRecordInitiative"
+          :saveFunction="initSetters.updateCharacterRecord"
+          :componentType="ComponentIs.InitiativeData"
+        />
+        <!-- <Button
           icon="pi pi-pencil"
           class="p-button-rounded p-button-success mr-2"
           @click="modalOpen(data)"
@@ -83,13 +101,13 @@
         <Button
           icon="pi pi-trash"
           class="p-button-rounded p-button-danger"
-          @click="() => store.removeCharacter(index, data.id, true)"
-        />
+          @click="() => initSetters.removeCharacter(index, data.id)"
+        /> -->
       </template>
     </Column>
   </DataTable>
 
-  <Dialog
+  <!-- <Dialog
     v-model:visible="editInit"
     :style="{ width: '450px' }"
     header="Edit Initiative"
@@ -99,13 +117,22 @@
       :initiativeRecord="recordValue"
       :saveCharacter="modalClose"
     ></InitiativeData>
-  </Dialog>
+  </Dialog> -->
 </template>
 
-<script lang="ts">
-import { defineComponent, inject, ref, computed } from "vue";
+<script setup lang="ts">
+import {
+  defineComponent,
+  inject,
+  ref,
+  computed,
+  PropType,
+  defineProps,
+  watchEffect,
+  watch,
+} from "vue";
 import { InitiativeObject } from "../../../Interfaces/initiative";
-import { IStore } from "../../../data/types";
+import { InitiativeStoreInterface, IStore } from "../../../data/types";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import DataTable from "primevue/datatable";
@@ -117,71 +144,57 @@ import InitiativeData from "./InitiativeData.vue";
 import { SERVER_EMITS } from "../../../data/emitFunctions";
 import { useToast } from "primevue/usetoast";
 import CharacterActions from "./CharacterActions.vue";
-export default defineComponent({
-  name: "SortableList",
-  components: {
-    DataTable,
-    Column,
-    Button,
-    Dialog,
-    SpellEffectIcon,
-    InitiativeData,
-    CharacterActions,
+import CurrentButton from "./CurrentButton.vue";
+import { getsessionId } from "../../../data/sessionStore";
+import EditDeleteButtons from "../EditDeleteButtons.vue";
+import { ComponentIs } from "../componentTypes";
+import MobileMenu from "../spells/MobileMenu.vue";
+import { ReturnTypes } from "../MenuItemSetup";
+
+const props = defineProps({
+  initSetters: {
+    type: Object as PropType<InitiativeStoreInterface["SETTERS"]>,
+    required: true,
   },
-  setup() {
-    const store = inject<IStore>("store");
-    const toast = useToast();
-    if (store === undefined) {
-      serverLogger(
-        LoggingTypes.alert,
-        `Failed to inject store`,
-        ComponentEnums.INITIATIVESTATE
-      );
-      throw new Error("Failed to inject store");
-    }
-    const editInit = ref(false);
-    const recordValue = ref<InitiativeObject>({} as InitiativeObject);
-    const reactiveList = computed(() => store?.getInitiative());
-    serverLogger(
-      LoggingTypes.debug,
-      `sortable list component created`,
-      ComponentEnums.SORTABLELIST
-    );
-
-    function modalOpen(data: InitiativeObject) {
-      recordValue.value = data;
-      editInit.value = true;
-    }
-
-    function modalClose(e: any, data: InitiativeObject) {
-      editInit.value = false;
-      if (store) {
-        store.updateCharacterRecord(data, false);
-        SERVER_EMITS.updateRecordInitiative(data, store.store.sessionId);
-        toast.add({
-          severity: "info",
-          summary: "Character Saved",
-          detail: `${data.characterName} successfully saved.`,
-          life: 3000,
-        });
-      }
-    }
-
-    function reOrderInitiative(e: any) {
-      store?.onDrop(e);
-    }
-
-    return {
-      store,
-      reactiveList,
-      reOrderInitiative,
-      editInit,
-      modalOpen,
-      recordValue,
-      modalClose,
-    };
+  initGetters: {
+    type: Object as PropType<InitiativeStoreInterface["GETTERS"]>,
+    required: true,
+  },
+  initEmits: {
+    type: Object as PropType<InitiativeStoreInterface["EMITS"]>,
+    required: true,
+  },
+  initData: {
+    type: Object as PropType<InitiativeObject[]>,
+    required: true,
   },
 });
+const toast = useToast();
+const editInit = ref(false);
+const recordValue = ref<InitiativeObject>({} as InitiativeObject);
+const reactiveList = ref(props.initGetters.getInitiative());
+serverLogger(
+  LoggingTypes.debug,
+  `sortable list component created`,
+  ComponentEnums.SORTABLELIST
+);
+
+function modalOpen(data: InitiativeObject) {
+  recordValue.value = data;
+  editInit.value = true;
+}
+
+function modalClose(e: any, data: InitiativeObject) {
+  editInit.value = false;
+  props.initSetters.updateCharacterRecord(data);
+  props.initEmits.updateRecordInitiative(data);
+  toast.add({
+    severity: "info",
+    summary: "Character Saved",
+    detail: `${data.characterName} successfully saved.`,
+    life: 3000,
+  });
+}
 </script>
 
 <style scoped lang="scss">

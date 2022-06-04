@@ -1,33 +1,24 @@
 <script setup lang="ts">
 import { SpellStoreInterface } from "../../../data/types";
-import { SpellObject } from "../../../Interfaces/Spells";
 import { inject, onMounted, ref } from "vue";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import serverLogger from "../../../Utils/LoggingClass";
+import SPELL_FUNCS from "../../../data/spellStore";
+import SpellState from "./SpellState.vue";
+import SpellSocketReceiver from "./SpellSocketReceiver.vue";
 
-const spellStore = inject<SpellStoreInterface>("spellStore");
 const error = ref();
 const loading = ref(true);
 
-if (spellStore === undefined) {
-  serverLogger(
-    LoggingTypes.alert,
-    `failed to inject store`,
-    ComponentEnums.SPELLRECORD
-  );
-  error.value = Error("failed to inject store");
-  throw new Error("Failed to inject store");
-}
-
-const spellSetters = spellStore.SPELL_FUNCS.SETTERS;
-const spellGetters = spellStore.SPELL_FUNCS.GETTERS;
-const spellEmits = spellStore.SPELL_FUNCS.EMITS;
+const spellSetters = SPELL_FUNCS.SETTERS;
+const spellGetters = SPELL_FUNCS.GETTERS;
+const spellEmits = SPELL_FUNCS.EMITS;
 const spellData = ref(spellGetters.getSpells());
 
 onMounted(() => {
   spellEmits.getInitialSpells();
+  serverLogger(LoggingTypes.info, `retrieved spellData`, `SpellInitialize`);
   loading.value = false;
-  console.log(spellData.value);
 });
 </script>
 
@@ -38,10 +29,11 @@ onMounted(() => {
   <div v-if="loading">
     <h2>Loading data...</h2>
   </div>
-  <slot
-    :spellData="spellData"
-    :spellGetters="spellGetters"
+  <SpellSocketReceiver></SpellSocketReceiver>
+  <SpellState
     :spellEmits="spellEmits"
+    :spellGetters="spellGetters"
     :spellSetters="spellSetters"
-  ></slot>
+    :spellData="spellData"
+  ></SpellState>
 </template>

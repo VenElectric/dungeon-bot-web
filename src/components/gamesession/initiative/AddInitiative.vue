@@ -77,14 +77,14 @@
     class="pi-button-primary m-2"
     @click.prevent="
       (e) => {
-        addCharacter(e, data, roll, npc);
+        saveFunction(e, data, roll, npc);
       }
     "
   />
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive, computed } from "vue";
+import { defineComponent, ref, reactive, computed, PropType } from "vue";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Button from "primevue/button";
@@ -92,12 +92,16 @@ import ClickIcon from "../../ClickIcon.vue";
 import { InitiativeObjectEnums } from "../../../Interfaces/Enums";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
+import { InitiativeStoreInterface } from "../../../data/types";
 
 export default defineComponent({
   name: "AddInitiative",
   components: { InputText, InputNumber, Button, ClickIcon },
   props: {
-    addCharacter: { type: Function, required: true },
+    saveFunction: {
+      type: Function,
+      required: true,
+    },
   },
   setup() {
     let data = reactive({

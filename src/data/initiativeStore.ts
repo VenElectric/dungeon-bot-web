@@ -1,7 +1,8 @@
 import { ref, Ref } from "vue";
 import { InitiativeObjectEnums } from "../Interfaces/ContextEnums";
 import { EmitTypes } from "../Interfaces/EmitTypes";
-import { InitiativeObject, SpellObject } from "../Interfaces/initiative";
+import { InitiativeObject, StatusEffect } from "../Interfaces/initiative";
+import { SpellObject } from "../Interfaces/Spells";
 import { LoggingTypes, StoreEnums } from "../Interfaces/LoggingTypes";
 import serverLogger from "../Utils/LoggingClass";
 import { getSocket, getsessionId } from "./sessionStore";
@@ -21,8 +22,50 @@ const INITIATIVE_FUNCS = {
     getSorted(): Ref<boolean> {
       return isSorted;
     },
+    getCurrent(index: number): boolean {
+      return initiativeList.value[index].isCurrent;
+    },
+    getRecord(index: number): InitiativeObject {
+      return initiativeList.value[index];
+    },
+    getInitIndexbyId(id: string): number {
+      return findIndexById(initiativeList.value, id);
+    },
+    getInitbyIndex(index: number): InitiativeObject {
+      return initiativeList.value[index];
+    },
+    getStatusIndexbyId(id: string, initIndex: number): number {
+      return findIndexById(initiativeList.value[initIndex].statusEffects, id);
+    },
+    getInitiativeById(id: string): InitiativeObject {
+      const initIndex = this.getInitIndexbyId(id);
+      return initiativeList.value[initIndex];
+    },
   },
   SETTERS: {
+    addSpellEffect(data: StatusEffect, id: string): void {
+      console.log(data, "add spell effect");
+      const initIndex = INITIATIVE_FUNCS.GETTERS.getInitIndexbyId(id);
+      initiativeList.value[initIndex].statusEffects.push(data);
+    },
+    removeSpellEffect(spellId: string, characterId: string): void {
+      const initIndex = INITIATIVE_FUNCS.GETTERS.getInitIndexbyId(characterId);
+      const statusIndex = INITIATIVE_FUNCS.GETTERS.getStatusIndexbyId(
+        spellId,
+        initIndex
+      );
+      initiativeList.value[initIndex].statusEffects.splice(statusIndex, 1);
+    },
+    addSpellEffectToAll(data: StatusEffect): void {
+      initiativeList.value.forEach((item: InitiativeObject) => {
+        this.addSpellEffect(data, item.id);
+      });
+    },
+    removeSpellEffectFromAll(spellId: string): void {
+      initiativeList.value.forEach((item: InitiativeObject) => {
+        this.removeSpellEffect(spellId, item.id);
+      });
+    },
     updateAllInitiative(data: InitiativeObject[]): void {
       initiativeList.value = data;
       serverLogger(
@@ -33,7 +76,6 @@ const INITIATIVE_FUNCS = {
       return;
     },
     updateCharacterRecord(initiative: InitiativeObject): void {
-      // is reset// all to false needs to be a separate thing
       serverLogger(
         LoggingTypes.debug,
         `updating initiative Ojbect`,
@@ -77,33 +119,12 @@ const INITIATIVE_FUNCS = {
       );
       isSorted.value = isSortedNew;
     },
-    getInitial(): void {
-      serverLogger(
-        LoggingTypes.info,
-        `first fetch initiative`,
-        StoreEnums.getInitial
-      );
-
-      const sessionId = getsessionId();
-
-      socket.emit(EmitTypes.GET_INITIAL, sessionId, (query: any) => {
-        initiativeList.value = query.initiativeList;
-        isSorted.value = query.isSorted;
-        serverLogger(
-          LoggingTypes.info,
-          `initiative store updated`,
-          StoreEnums.getInitial
-        );
-      });
-    },
     addCharacter(data: InitiativeObject): void {
       serverLogger(
         LoggingTypes.debug,
         `changing all isCurrent to false`,
         StoreEnums.addCharacter
       );
-      this.alltoFalse();
-      isSorted.value = false;
 
       serverLogger(
         LoggingTypes.debug,
@@ -113,43 +134,12 @@ const INITIATIVE_FUNCS = {
       );
 
       initiativeList.value.push(data);
-      // update once spell store is created
-      // this should be it's own function
-      // if (sessionData.spells.length > 0) {
-      //   serverLogger(
-      //     LoggingTypes.debug,
-      //     `adding new character to spells characterIds lists`,
-      //     StoreEnums.addCharacter,
-      //     data.id
-      //   );
-      //   sessionData.spells.forEach((spell: SpellObject) => {
-      //     spell.characterIds.source.push({
-      //       characterName: data.characterName,
-      //       characterId: data.id,
-      //     });
-      //   });
-
-      //   serverLogger(
-      //     LoggingTypes.debug,
-      //     `emitting Spell List`,
-      //     StoreEnums.addCharacter
-      //   );
-      //   socket.emit(EmitTypes.UPDATE_ALL_SPELL, {
-      //     payload: sessionData.spells,
-      //     sessionId: sessionData.sessionId,
-      //   });
-      // } separate functions
       serverLogger(
         LoggingTypes.debug,
         `emitting new character`,
         StoreEnums.addCharacter,
         data.id
       );
-      const sessionId = getsessionId();
-      socket.emit(EmitTypes.CREATE_NEW_INITIATIVE, {
-        payload: data,
-        sessionId: sessionId,
-      });
     },
     startDrag(evt: DragEvent, index: number): void {
       if (evt.dataTransfer !== null) {
@@ -203,21 +193,6 @@ const INITIATIVE_FUNCS = {
         `drop complete, initiativeList order updating`,
         StoreEnums.onDrop
       );
-      // setTimeout(() => {
-      //   serverLogger(
-      //     LoggingTypes.debug,
-      //     `emitting ${EmitTypes.UPDATE_ALL_INITIATIVE} after drop completion`,
-      //     StoreEnums.onDrop
-      //   );
-      //   // this needs to be a separate function
-      //   const sessionId = getsessionId();
-      //   socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
-      //     payload: initiativeList.value,
-      //     sessionId: sessionId,
-      //     resetOnDeck: true,
-      //     isSorted: isSorted.value,
-      //   });
-      // }, 500); separate function
     },
     moveDown(index: number): void {
       console.log(index);
@@ -253,14 +228,14 @@ const INITIATIVE_FUNCS = {
       //   });
       // }, 500); separate function
     },
-    removeCharacter(index: number, id: string, emit: boolean): void {
+    deleteInitiative(id: string): void {
       isSorted.value = false;
-      initiativeList.value.splice(index, 1);
+      const initIndex = findIndexById(initiativeList.value, id);
+      initiativeList.value.splice(initIndex, 1);
       serverLogger(
         LoggingTypes.info,
         `character removed, sort reset`,
-        StoreEnums.removeCharacter,
-        id
+        StoreEnums.removeCharacter
       );
       // this should be outside of this function
       // if (sessionData.spells.length > 0) {
@@ -308,6 +283,17 @@ const INITIATIVE_FUNCS = {
     },
   },
   EMITS: {
+    createNewInitiative(initiative: InitiativeObject): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.CREATE_NEW_INITIATIVE, {
+        payload: initiative,
+        sessionId: sessionId,
+      });
+    },
+    emitResetInitiative(): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.DELETE_ALL_INITIATIVE, sessionId);
+    },
     reSort(): void {
       serverLogger(
         LoggingTypes.info,
@@ -325,50 +311,88 @@ const INITIATIVE_FUNCS = {
         );
       });
     },
-  },
-  roundStart(): void {
-    serverLogger(
-      LoggingTypes.info,
-      `emitting ${EmitTypes.ROUND_START} for initiative`,
-      StoreEnums.roundStart
-    );
-    const sessionId = getsessionId();
-    socket.emit(
-      EmitTypes.ROUND_START,
-      sessionId,
-      (data: InitiativeObject[]) => {
-        initiativeList.value = data;
-        isSorted.value = true;
+    roundStart(): void {
+      serverLogger(
+        LoggingTypes.info,
+        `emitting ${EmitTypes.ROUND_START} for initiative`,
+        StoreEnums.roundStart
+      );
+      const sessionId = getsessionId();
+      socket.emit(
+        EmitTypes.ROUND_START,
+        sessionId,
+        (data: InitiativeObject[]) => {
+          initiativeList.value = data;
+          isSorted.value = true;
+          serverLogger(
+            LoggingTypes.info,
+            `roundstart complete, updated store data for initiative and isSorted: ${isSorted.value}`,
+            StoreEnums.roundStart
+          );
+        }
+      );
+    },
+    nextTurn(): void {
+      serverLogger(
+        LoggingTypes.info,
+        `emitting ${EmitTypes.NEXT}`,
+        StoreEnums.nextTurn
+      );
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.NEXT, sessionId);
+    },
+    previousTurn(): void {
+      serverLogger(
+        LoggingTypes.info,
+        `emitting ${EmitTypes.PREVIOUS}`,
+        StoreEnums.nextTurn
+      );
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.PREVIOUS, sessionId);
+    },
+    getInitial(): void {
+      serverLogger(
+        LoggingTypes.info,
+        `first fetch initiative`,
+        StoreEnums.getInitial
+      );
+
+      const sessionId = getsessionId();
+
+      socket.emit(EmitTypes.GET_INITIAL, sessionId, (query: any) => {
+        initiativeList.value = query.initiativeList;
+        isSorted.value = query.isSorted;
         serverLogger(
           LoggingTypes.info,
-          `roundstart complete, updated store data for initiative and isSorted: ${isSorted.value}`,
-          StoreEnums.roundStart
+          `initiative store updated`,
+          StoreEnums.getInitial
         );
-      }
-    );
-  },
-  nextTurn(): void {
-    serverLogger(
-      LoggingTypes.info,
-      `emitting ${EmitTypes.NEXT}`,
-      StoreEnums.nextTurn
-    );
-    const sessionId = getsessionId();
-    socket.emit(EmitTypes.NEXT, sessionId);
-  },
-  previousTurn(): void {
-    serverLogger(
-      LoggingTypes.info,
-      `emitting ${EmitTypes.PREVIOUS}`,
-      StoreEnums.nextTurn
-    );
-    const sessionId = getsessionId();
-    socket.emit(EmitTypes.PREVIOUS, sessionId);
+      });
+    },
+    updateRecordInitiative(initiative: InitiativeObject): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.UPDATE_RECORD_INITIATIVE, {
+        payload: initiative,
+        sessionId: sessionId,
+        docId: initiative.id,
+      });
+    },
+    updateAllInitiative(): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
+        payload: initiativeList.value,
+        sessionId: sessionId,
+        isSorted: isSorted.value,
+      });
+    },
+    deleteOneInitiative(docId: string): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.DELETE_ONE_INITIATIVE, {
+        sessionId: sessionId,
+        docId: docId,
+      });
+    },
   },
 };
 
-export default {
-  initiativeList,
-  INITIATIVE_FUNCS,
-  isSorted,
-};
+export default INITIATIVE_FUNCS;

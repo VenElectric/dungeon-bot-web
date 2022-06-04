@@ -20,13 +20,26 @@ const SPELL_FUNCS = {
     getSpells(): Ref<SpellObject[]> {
       return spellStore;
     },
-    getCharacterIds(index: number): CharacterStatusFirestore {
-      return spellStore.value[index].characterIds;
+    getCharacterIds(
+      index: number
+    ): [
+      CharacterStatusFirestore["source"],
+      CharacterStatusFirestore["target"]
+    ] {
+      return [
+        spellStore.value[index].characterIds.source,
+        spellStore.value[index].characterIds.target,
+      ];
+    },
+    getSpellbyIndex(index: number): SpellObject {
+      return spellStore.value[index];
+    },
+    getSpellIndexbyId(id: string): number {
+      return findIndexById(spellStore.value, id);
     },
   },
   SETTERS: {
     resetSpells(): void {
-      console.log("resetting spells");
       spellStore.value = [];
       serverLogger(LoggingTypes.info, `spells reset`, StoreEnums.resetAll);
     },
@@ -38,14 +51,15 @@ const SPELL_FUNCS = {
         StoreEnums.updateAll
       );
     },
-    removeSpell(index: number, id: string): void {
+    deleteSpell(id: string): void {
+      const spellIndex = findIndexById(spellStore.value, id);
       serverLogger(
         LoggingTypes.debug,
         `removing status effects from all characters this spell`,
         StoreEnums.removeSpell,
         id
       );
-      this.removeStatusEffects(index);
+      PRIVATE_FUNCS.removeStatusEffects(spellIndex);
       setTimeout(() => {
         serverLogger(
           LoggingTypes.debug,
@@ -53,39 +67,32 @@ const SPELL_FUNCS = {
           StoreEnums.removeSpell,
           id
         );
-        spellStore.value.splice(index, 1);
+        spellStore.value.splice(spellIndex, 1);
       }, 200);
     },
-    addSpell(data: any): SpellObject {
+    pushNewSpell(data: SpellObject): void {
+      spellStore.value.push(data);
+    },
+    addSpell(data: SpellObject): void {
       const id = uuidv4();
-      serverLogger(
-        LoggingTypes.debug,
-        `creating spell object`,
-        StoreEnums.addSpell,
-        id
-      );
-      const newData = {
-        durationTime: data.durationTime,
-        durationType: data.durationType,
-        effectName: data.effectName,
-        effectDescription: data.effectDescription,
-        id: id,
-        characterIds: { target: [], source: [] } as CharacterStatusFirestore,
-      };
+      data.id = id;
+      spellStore.value.push(data);
       serverLogger(
         LoggingTypes.debug,
         `adding characters to spell characterIds`,
         StoreEnums.addSpell,
         id
       );
-
-      serverLogger(
-        LoggingTypes.debug,
-        `spell added to store, emitting ${EmitTypes.CREATE_NEW_SPELL}`,
-        StoreEnums.addSpell,
-        id
-      );
-      return newData;
+    },
+    // newly created initiative records passed through this
+    // to add their ids to the spells
+    initializeSpellStoreCharacterIds(record: InitiativeObject): void {
+      spellStore.value.forEach((item: SpellObject, index: number) => {
+        spellStore.value[index].characterIds.source.push({
+          characterName: record.characterName,
+          id: record.id,
+        });
+      });
     },
     initializeCharacterIDS(
       spellData: SpellObject,
@@ -146,89 +153,6 @@ const SPELL_FUNCS = {
       }
       return spellStore.value[index];
     },
-    addStatusEffects(index: number): void {
-      serverLogger(
-        LoggingTypes.debug,
-        `adding spell effect to all characters`,
-        StoreEnums.addStatusEffects,
-        spellStore.value[index].id
-      );
-      const initiativeTemp =
-        initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
-      initiativeTemp.value.forEach((init: InitiativeObject) => {
-        init.statusEffects.push({
-          spellName: spellStore.value[index].effectName,
-          id: spellStore.value[index].id,
-          effectDescription: spellStore.value[index].effectDescription,
-        });
-      });
-      initiativeStore.INITIATIVE_FUNCS.SETTERS.updateAllInitiative(
-        initiativeTemp.value
-      );
-    },
-    removeStatusEffects(spellIndex: number): void {
-      serverLogger(
-        LoggingTypes.debug,
-        `removing spell effect from all characters`,
-        StoreEnums.removeStatusEffects,
-        spellStore.value[spellIndex].id
-      );
-      const initiativeTemp =
-        initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
-
-      for (const record of initiativeTemp.value) {
-        const statusIndex = findIndexById(
-          record.statusEffects,
-          spellStore.value[spellIndex].id
-        );
-        if (statusIndex > -1) {
-          record.statusEffects.splice(statusIndex, 1);
-          initiativeStore.INITIATIVE_FUNCS.SETTERS.updateCharacterRecord(
-            record
-          );
-        }
-      }
-    },
-    addStatusEffect(
-      spellName: string,
-      spellId: string,
-      effectDescription: string,
-      characterIndex: number
-    ): void {
-      const intiativeTemp =
-        initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
-      serverLogger(
-        LoggingTypes.debug,
-        `adding spell effect to one character`,
-        StoreEnums.addStatusEffect
-      );
-      intiativeTemp.value[characterIndex].statusEffects.push({
-        spellName: spellName,
-        id: spellId,
-        effectDescription: effectDescription,
-      });
-      initiativeStore.INITIATIVE_FUNCS.SETTERS.updateCharacterRecord(
-        intiativeTemp.value[characterIndex]
-      );
-    },
-    removeStatusEffect(spellId: string, characterIndex: number): void {
-      const initiativeTemp =
-        initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
-      serverLogger(
-        LoggingTypes.debug,
-        `removing spell effect from one character`,
-        StoreEnums.removeStatusEffect,
-        initiativeTemp.value[characterIndex].id
-      );
-      const spellIndex = findIndexById(
-        initiativeTemp.value[characterIndex].statusEffects,
-        spellId
-      );
-      initiativeTemp.value[characterIndex].statusEffects.splice(spellIndex, 1);
-      initiativeStore.INITIATIVE_FUNCS.SETTERS.updateCharacterRecord(
-        initiativeTemp.value[characterIndex]
-      );
-    },
     changeAllCharacterToTarget(index: number): void {
       serverLogger(
         LoggingTypes.debug,
@@ -242,7 +166,7 @@ const SPELL_FUNCS = {
           ...spellStore.value[index].characterIds.source,
         ];
         spellStore.value[index].characterIds.source = [];
-        this.addStatusEffects(index);
+        PRIVATE_FUNCS.addStatusEffects(index);
         serverLogger(
           LoggingTypes.debug,
           `update complete, moved to target`,
@@ -267,7 +191,7 @@ const SPELL_FUNCS = {
           ...spellStore.value[index].characterIds.target,
         ];
         spellStore.value[index].characterIds.target = [];
-        this.removeStatusEffects(index);
+        PRIVATE_FUNCS.removeStatusEffects(index);
         serverLogger(
           LoggingTypes.debug,
           `update complete, moved to source`,
@@ -289,9 +213,8 @@ const SPELL_FUNCS = {
     },
     changeOneCharacterToSource(e: CharacterPickListEvent, index: number): void {
       try {
-        const characterId = e.items[0].characterId;
-        const initiativeTemp =
-          initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
+        const characterId = e.items[0].id;
+        const initiativeTemp = initiativeStore.GETTERS.getInitiative();
         const characterIndex = findIndexById(initiativeTemp.value, characterId);
         serverLogger(
           LoggingTypes.info,
@@ -301,14 +224,17 @@ const SPELL_FUNCS = {
         );
         const spellIndex = findIndexById(
           spellStore.value[index].characterIds.target,
-          e.items[0].characterId
+          e.items[0].id
         );
 
         spellStore.value[index].characterIds.source.push(
           spellStore.value[index].characterIds.target[spellIndex]
         );
         spellStore.value[index].characterIds.target.splice(spellIndex, 1);
-        this.removeStatusEffect(spellStore.value[index].id, characterIndex);
+        PRIVATE_FUNCS.removeStatusEffect(
+          spellStore.value[index].id,
+          characterIndex
+        );
       } catch (error) {
         if (error instanceof Error) {
           serverLogger(
@@ -322,9 +248,11 @@ const SPELL_FUNCS = {
     },
     changeOneCharacterToTarget(e: CharacterPickListEvent, index: number): void {
       try {
-        const characterId = e.items[0].characterId;
-        const initiativeTemp =
-          initiativeStore.INITIATIVE_FUNCS.GETTERS.getInitiative();
+        const characterId = e.items[0].id;
+        console.log(e.items[0], "character data");
+        const initiativeTemp = initiativeStore.GETTERS.getInitiative();
+        console.log(initiativeTemp);
+        console.log(characterId);
         const characterIndex = findIndexById(initiativeTemp.value, characterId);
         serverLogger(
           LoggingTypes.info,
@@ -334,7 +262,7 @@ const SPELL_FUNCS = {
         );
         const spellIndex = findIndexById(
           spellStore.value[index].characterIds.source,
-          e.items[0].characterId
+          e.items[0].id
         );
 
         spellStore.value[index].characterIds.target.push(
@@ -342,7 +270,7 @@ const SPELL_FUNCS = {
         );
         spellStore.value[index].characterIds.source.splice(spellIndex, 1);
 
-        this.addStatusEffect(
+        PRIVATE_FUNCS.addStatusEffect(
           spellStore.value[index].effectName,
           spellStore.value[index].id,
           spellStore.value[index].effectDescription,
@@ -363,6 +291,50 @@ const SPELL_FUNCS = {
             spellStore.value[index].id
           );
         }
+      }
+    },
+    removeCharacterFromSpells(characterId: string): void {
+      for (const spell of spellStore.value) {
+        const sourceIndex = findIndexById(
+          spell.characterIds.source,
+          characterId
+        );
+        const targetIndex = findIndexById(
+          spell.characterIds.target,
+          characterId
+        );
+        const spellIndex = findIndexById(spellStore.value, spell.id);
+        // const finalIndex = indexZero != -1 ? indexZero : indexOne;
+        if (sourceIndex > -1) {
+          serverLogger(
+            LoggingTypes.debug,
+            `removing character from spell.characterIds at indexZero`,
+            StoreEnums.removeCharacter,
+            spell.id
+          );
+          spellStore.value[spellIndex].characterIds.source.splice(
+            sourceIndex,
+            1
+          );
+        }
+        if (targetIndex > -1) {
+          serverLogger(
+            LoggingTypes.debug,
+            `removing character from spell.characterIds at indexOne`,
+            StoreEnums.removeCharacter,
+            spell.id
+          );
+          spellStore.value[spellIndex].characterIds.target.splice(
+            targetIndex,
+            1
+          );
+        }
+      }
+    },
+    removeAllCharactersFromSpells(): void {
+      for (let x = 0; x < spellStore.value.length; x++) {
+        spellStore.value[x].characterIds.source = [];
+        spellStore.value[x].characterIds.target = [];
       }
     },
   },
@@ -429,15 +401,94 @@ const SPELL_FUNCS = {
       });
     },
     emitUpdateAllSpells(): void {
-      socket.emit(EmitTypes.UPDATE_ALL_INITIATIVE, {
+      socket.emit(EmitTypes.UPDATE_ALL_SPELL, {
         payload: spellStore.value,
         sessionId: getsessionId(),
       });
     },
+    emitResetSpells(): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.DELETE_ALL_SPELL, sessionId);
+    },
   },
 };
 
-export default {
-  spellStore,
-  SPELL_FUNCS,
+const PRIVATE_FUNCS = {
+  addStatusEffects(index: number): void {
+    serverLogger(
+      LoggingTypes.debug,
+      `adding spell effect to all characters`,
+      StoreEnums.addStatusEffects,
+      spellStore.value[index].id
+    );
+    const initiativeTemp = initiativeStore.GETTERS.getInitiative();
+    initiativeTemp.value.forEach((init: InitiativeObject) => {
+      init.statusEffects.push({
+        spellName: spellStore.value[index].effectName,
+        id: spellStore.value[index].id,
+        effectDescription: spellStore.value[index].effectDescription,
+      });
+    });
+    initiativeStore.SETTERS.updateAllInitiative(initiativeTemp.value);
+  },
+  removeStatusEffects(spellIndex: number): void {
+    serverLogger(
+      LoggingTypes.debug,
+      `removing spell effect from all characters`,
+      StoreEnums.removeStatusEffects,
+      spellStore.value[spellIndex].id
+    );
+    const initiativeTemp = initiativeStore.GETTERS.getInitiative();
+
+    for (const record of initiativeTemp.value) {
+      const statusIndex = findIndexById(
+        record.statusEffects,
+        spellStore.value[spellIndex].id
+      );
+      if (statusIndex > -1) {
+        record.statusEffects.splice(statusIndex, 1);
+        initiativeStore.SETTERS.updateCharacterRecord(record);
+      }
+    }
+  },
+  addStatusEffect(
+    spellName: string,
+    spellId: string,
+    effectDescription: string,
+    characterIndex: number
+  ): void {
+    const intiativeTemp = initiativeStore.GETTERS.getInitiative();
+    serverLogger(
+      LoggingTypes.debug,
+      `adding spell effect to one character`,
+      StoreEnums.addStatusEffect
+    );
+    intiativeTemp.value[characterIndex].statusEffects.push({
+      spellName: spellName,
+      id: spellId,
+      effectDescription: effectDescription,
+    });
+    initiativeStore.SETTERS.updateCharacterRecord(
+      intiativeTemp.value[characterIndex]
+    );
+  },
+  removeStatusEffect(spellId: string, characterIndex: number): void {
+    const initiativeTemp = initiativeStore.GETTERS.getInitiative();
+    serverLogger(
+      LoggingTypes.debug,
+      `removing spell effect from one character`,
+      StoreEnums.removeStatusEffect,
+      initiativeTemp.value[characterIndex].id
+    );
+    const spellIndex = findIndexById(
+      initiativeTemp.value[characterIndex].statusEffects,
+      spellId
+    );
+    initiativeTemp.value[characterIndex].statusEffects.splice(spellIndex, 1);
+    initiativeStore.SETTERS.updateCharacterRecord(
+      initiativeTemp.value[characterIndex]
+    );
+  },
 };
+
+export default SPELL_FUNCS;

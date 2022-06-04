@@ -1,4 +1,5 @@
-import { InitiativeObject, SpellObject, SessionData } from "./initiative";
+import { InitiativeObject, SessionData } from "./initiative";
+import { SpellObject } from "./Spells";
 import { CollectionTypes } from "./Enums";
 
 export enum EmitTypes {

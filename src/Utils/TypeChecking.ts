@@ -1,11 +1,10 @@
+import { InitiativeObject, SessionData } from "../Interfaces/initiative";
 import {
-  CharacterStatus,
-  CharacterStatusFirestore,
-  InitiativeObject,
-  SessionData,
   SpellObject,
   ServerSpellObject,
-} from "../Interfaces/initiative";
+  CharacterStatus,
+  CharacterStatusFirestore,
+} from "../Interfaces/Spells";
 import { LoggingTypes } from "../Interfaces/LoggingTypes";
 import serverLogger from "./LoggingClass";
 

@@ -1,5 +1,6 @@
 import { EmitTypes } from "../Interfaces/EmitTypes";
-import { InitiativeObject, SpellObject } from "../Interfaces/initiative";
+import { InitiativeObject } from "../Interfaces/initiative";
+import { SpellObject } from "../Interfaces/Spells";
 import { InitiativeObjectEnums, SpellObjectEnums } from "../Interfaces/Enums";
 import { CollectionTypes } from "../Interfaces/ContextEnums";
 import store from "./store";

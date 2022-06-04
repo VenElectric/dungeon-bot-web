@@ -6,6 +6,7 @@ import { RollObject } from "../Interfaces/Rolls";
 import serverLogger from "../Utils/LoggingClass";
 import { getSocket, getsessionId } from "./sessionStore";
 import { v4 as uuidv4 } from "uuid";
+import { findIndexById } from "./utilities";
 
 const rollData = ref([] as RollObject[]);
 
@@ -30,6 +31,12 @@ const ROLL_FUNCS = {
       console.log(typeof errorMsg);
       return errorMsg;
     },
+    getRollbyIndex(index: number): RollObject {
+      return rollData.value[index];
+    },
+    getRollIndexbyId(id: string): number {
+      return findIndexById(rollData.value, id);
+    },
   },
   SETTERS: {
     getInitialRolls(): void {
@@ -52,6 +59,9 @@ const ROLL_FUNCS = {
         }
       );
     },
+    pushNewRoll(roll: RollObject): void {
+      rollData.value.push(roll);
+    },
     addRoll(rollName: string, rollValue: string): RollObject {
       const rollId = uuidv4();
       const rollObject = {
@@ -62,9 +72,8 @@ const ROLL_FUNCS = {
       rollData.value.push(rollObject);
       return rollObject;
     },
-    updateRoll(rollName: string, rollValue: string, index: number): void {
-      rollData.value[index].rollName = rollName;
-      rollData.value[index].rollValue = rollValue;
+    updateRoll(data: RollObject, index: number): void {
+      rollData.value[index] = data;
     },
     deleteRoll(index: number): void {
       rollData.value.splice(index, 1);
@@ -109,7 +118,4 @@ const ROLL_FUNCS = {
   },
 };
 
-export default {
-  rollData,
-  ROLL_FUNCS,
-};
+export default ROLL_FUNCS;

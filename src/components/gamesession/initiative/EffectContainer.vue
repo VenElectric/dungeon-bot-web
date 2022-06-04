@@ -11,7 +11,6 @@
 <script lang="ts">
 import { computed, defineComponent, PropType, reactive, watch } from "vue";
 import { StatusEffect } from "../../../Interfaces/initiative";
-import Effect from "./Effect.vue";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 
@@ -27,18 +26,7 @@ export default defineComponent({
       `container created`,
       ComponentEnums.EFFECTCONTAINER
     );
-    // watch(
-    //   () => props.statusEffects,
-    //   () => {
-    //     serverLogger(
-    //       LoggingTypes.debug,
-    //       `watch triggered`,
-    //       ComponentEnums.EFFECTCONTAINER
-    //     );
-    //     data.statusEffects = props.statusEffects;
-    //   },
-    //   { deep: true }
-    // );
+    console.log(props.statusEffects);
 
     return { lengthNumber };
   },

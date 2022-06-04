@@ -1,9 +1,5 @@
-import { Ref } from "vue";
+import { DiceRoll } from "@dice-roller/rpg-dice-roller";
 
-function toggleAdd(event: any, ref: Ref) {
-  ref.value.toggle(event);
-}
-
-export function openModal(modalRef: Ref<boolean>): void {
-  modalRef.value = true;
+export function rollDice(rollString: string): DiceRoll {
+  return new DiceRoll(rollString);
 }

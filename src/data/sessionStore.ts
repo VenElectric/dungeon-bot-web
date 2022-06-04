@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { LoggingTypes, StoreEnums } from "../Interfaces/LoggingTypes";
 import serverLogger from "../Utils/LoggingClass";
 
-const socketString = "http://localhost:8000";
+const socketString = "http://localhost:5000";
 const productionString = "https://dungeon-bot-server.herokuapp.com";
 
 const socket = ref(io(socketString));
@@ -15,6 +15,19 @@ export function getSocket(): any {
 
 export function getsessionId(): string {
   return sessionId.value;
+}
+
+export function roomSetup(): void {
+  try {
+    serverLogger(LoggingTypes.debug, `joining room`, StoreEnums.roomSetup);
+    socket.value.emit("create", sessionId.value);
+  } catch (error) {
+    serverLogger(
+      LoggingTypes.debug,
+      `unable to connect to socket io`,
+      StoreEnums.roomSetup
+    );
+  }
 }
 
 export function updateId(id: string): void {
