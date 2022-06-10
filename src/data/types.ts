@@ -127,9 +127,9 @@ export interface InitiativeStoreInterface {
     getInitiativeById(id: string): InitiativeObject;
   };
   SETTERS: {
+    addSpellEffect(data: StatusEffect, id: string): void;
     addSpellEffectToAll(data: StatusEffect[], initId: string): void;
-    addOneSpellEffect(data: StatusEffect, id: string): void;
-    removeOneSpellEffect(spellId: string, characterId: string): void;
+    removeSpellEffect(spellId: string, characterId: string): void;
     removeSpellEffectFromAll(spellId: string): void;
     deleteInitiative(id: string): void;
     updateAllInitiative(data: InitiativeObject[]): void;

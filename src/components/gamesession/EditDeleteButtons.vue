@@ -3,12 +3,9 @@ import { SpellObject } from "../../Interfaces/Spells";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import { ref, defineProps, PropType, computed } from "vue";
-import AddInitiative from "./initiative/AddInitiative.vue";
-import AddSpell from "./spells/AddSpell.vue";
 import DialogPopUp from "./DialogPopUp.vue";
 import { InitiativeObject } from "../../Interfaces/initiative";
 import { ComponentIs } from "./componentTypes";
-import { connectStorageEmulator } from "@firebase/storage";
 
 const props = defineProps({
   deleteItem: {

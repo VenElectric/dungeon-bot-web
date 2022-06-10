@@ -2,6 +2,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import Home from "../views/Home.vue";
 import { UserState } from "../firesinit";
 import GameSession from "../views/GameSession.vue";
+import CharacterSheet from "../views/CharacterSheet.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -14,6 +15,12 @@ const routes: Array<RouteRecordRaw> = [
     path: "/session/:id",
     name: "GameSession",
     component: GameSession,
+    meta: { loggedin: false },
+  },
+  {
+    path: "/sheet",
+    name: "CharacterSheet",
+    component: CharacterSheet,
     meta: { loggedin: false },
   },
 ];

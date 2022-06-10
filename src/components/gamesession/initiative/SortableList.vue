@@ -20,18 +20,6 @@
           :setCurrent="initSetters.setCurrent"
           :getCurrent="initGetters.getCurrent"
         />
-        <!-- <Button
-          v-if="data[field]"
-          icon="pi pi-arrow-circle-right"
-          class="p-button-raised p-button-rounded p-mr-3 p-button-success"
-        />
-        <Button
-          v-if="!data[field]"
-          icon="pi pi-minus-circle"
-          v-tooltip.top="'Click to set this record as the current turn.'"
-          class="p-button-raised p-button-rounded p-mr-3 p-button-danger"
-          @click.prevent="() => store.setCurrent(index)"
-        /> -->
       </template>
     </Column>
     <Column header="Re-Order" class="column-small-screen">
@@ -121,16 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  defineComponent,
-  inject,
-  ref,
-  computed,
-  PropType,
-  defineProps,
-  watchEffect,
-  watch,
-} from "vue";
+import { ref, PropType, defineProps } from "vue";
 import { InitiativeObject } from "../../../Interfaces/initiative";
 import { InitiativeStoreInterface, IStore } from "../../../data/types";
 import serverLogger from "../../../Utils/LoggingClass";
