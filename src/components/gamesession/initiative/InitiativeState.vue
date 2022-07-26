@@ -83,12 +83,10 @@
 <script setup lang="ts">
 import { PropType, defineProps } from "vue";
 import { InitiativeStoreInterface } from "../../../data/types";
-import { ref, inject } from "vue";
+import { ref } from "vue";
 import OverlayPanel from "primevue/overlaypanel";
 import ToolBar from "primevue/toolbar";
 import Button from "primevue/button";
-import Skeleton from "primevue/skeleton";
-import { IStore, RollStoreInterface } from "../../../data/types";
 import SortableList from "./SortableList.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
@@ -125,8 +123,6 @@ const toast = useToast();
 const confirm = useConfirm();
 const op = ref(null);
 const hamRef = ref(null);
-
-const initiativeList = ref(props.initData);
 
 function toggleAdd(event: any) {
   (op.value as any).toggle(event);

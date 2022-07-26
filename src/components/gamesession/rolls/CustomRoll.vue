@@ -64,8 +64,11 @@ function editRoll() {
   closeEdit();
   console.log(editRollValue);
   rollData?.ROLL_FUNCS.SETTERS.updateRoll(
-    editRollName.value,
-    editRollValue.value,
+    {
+      id: rolls.value[editIndex.value].id,
+      rollName: editRollName.value,
+      rollValue: editRollValue.value,
+    },
     editIndex.value
   );
   rollData?.ROLL_FUNCS.EMITS.emitUpdateRoll({

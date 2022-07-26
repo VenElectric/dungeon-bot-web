@@ -1,6 +1,6 @@
 import { LoggingTypes } from "../Interfaces/LoggingTypes";
-import store from "../data/store";
-const socket = store.store.socket;
+import { getSocket } from "../data/sessionStore";
+const socket = getSocket();
 
 export default function serverLogger(
   level: LoggingTypes,

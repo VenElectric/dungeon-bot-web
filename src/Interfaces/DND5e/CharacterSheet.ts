@@ -1,5 +1,13 @@
+import { AbilityScoresObj } from "../Common/AbilityScores";
+import { SpellBookObject } from "../Spells";
 export interface CharacterSheetObj {
-  MainStats: MainStats;
+  mainStats: MainStats;
+  abilityScores: AbilityScoresObj;
+  health: HealthObj;
+  savingThrows: SavingThrowObj;
+  movement: MovementObj;
+  inventory: InventoryObj;
+  spells: SpellBookObject[];
 }
 
 export enum Languages {
@@ -19,31 +27,6 @@ export interface MainStats {
   spellAttack: number;
   spellSaveDC: number;
   isInspired: boolean;
-}
-
-export interface AbilityScoreObj {
-  value: number;
-  bonus: number;
-  misc: number;
-  // calculate total bonus from other areas such as feats
-}
-
-export const AbilityScores: { [scoreAbbr: string]: string } = {
-  str: "Strength",
-  dex: "Dexterity",
-  con: "Constitution",
-  int: "Intelligence",
-  wis: "Wisdom",
-  cha: "Charisma",
-};
-
-export interface AbilityScoresObj {
-  str: AbilityScoreObj;
-  dex: AbilityScoreObj;
-  con: AbilityScoreObj;
-  int: AbilityScoreObj;
-  wis: AbilityScoreObj;
-  cha: AbilityScoreObj;
 }
 
 export interface TempHPSource {
@@ -85,6 +68,12 @@ export enum RarityTypes {
   // todo
 }
 
+export interface InventoryObj {
+  items: ItemObj[];
+  weapons: WeaponObj[];
+  armor: ArmorObj[];
+}
+
 export interface ItemObj {
   id: string;
   name: string;
@@ -107,7 +96,7 @@ export enum DamageTypes {
   // todo
 }
 
-export interface Weapon extends ItemObj {
+export interface WeaponObj extends ItemObj {
   isProficient: boolean;
   type: WeaponTypes;
   reach: string;
@@ -122,7 +111,7 @@ export enum ArmorTypes {
   heavy = "Heavy",
 }
 
-export interface Armor extends ItemObj {
+export interface ArmorObj extends ItemObj {
   armorClass: number;
   armorType: ArmorTypes;
 }

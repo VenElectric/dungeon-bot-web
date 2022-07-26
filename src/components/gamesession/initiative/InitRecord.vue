@@ -53,14 +53,7 @@
 </template>
 
 <script lang="ts">
-import {
-  defineComponent,
-  PropType,
-  reactive,
-  watch,
-  inject,
-  computed,
-} from "vue";
+import { defineComponent, PropType, inject, computed } from "vue";
 import { InitiativeObject } from "../../../Interfaces/initiative";
 import { InitiativeObjectEnums } from "../../../Interfaces/ContextEnums";
 import Card from "primevue/card";

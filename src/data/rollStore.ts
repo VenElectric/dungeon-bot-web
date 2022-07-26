@@ -1,4 +1,4 @@
-import { DiceRoll } from "@dice-roller/rpg-dice-roller";
+import { DiceRoll, DiceRoller } from "@dice-roller/rpg-dice-roller";
 import { ref, Ref } from "vue";
 import { EmitTypes } from "../Interfaces/EmitTypes";
 import { LoggingTypes, StoreEnums } from "../Interfaces/LoggingTypes";
@@ -10,6 +10,8 @@ import { findIndexById } from "./utilities";
 
 const rollData = ref([] as RollObject[]);
 
+const roller = ref(new DiceRoller());
+
 const socket = getSocket();
 
 const ROLL_FUNCS = {
@@ -18,8 +20,7 @@ const ROLL_FUNCS = {
       return rollData;
     },
     rollDice(diceRoll: string): DiceRoll {
-      const newRoll = new DiceRoll(diceRoll);
-      return newRoll;
+      return roller.value.roll(diceRoll) as DiceRoll;
     },
     tryRoll(roll: string): any {
       let errorMsg;

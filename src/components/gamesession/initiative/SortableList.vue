@@ -16,9 +16,9 @@
     <Column header="Current Turn" field="isCurrent" class="column-large-screen">
       <template #body="{ index }">
         <current-button
+          :record="initData[index]"
           :index="index"
           :setCurrent="initSetters.setCurrent"
-          :getCurrent="initGetters.getCurrent"
         />
       </template>
     </Column>
@@ -81,16 +81,6 @@
           :saveFunction="initSetters.updateCharacterRecord"
           :componentType="ComponentIs.InitiativeData"
         />
-        <!-- <Button
-          icon="pi pi-pencil"
-          class="p-button-rounded p-button-success mr-2"
-          @click="modalOpen(data)"
-        />
-        <Button
-          icon="pi pi-trash"
-          class="p-button-rounded p-button-danger"
-          @click="() => initSetters.removeCharacter(index, data.id)"
-        /> -->
       </template>
     </Column>
   </DataTable>
@@ -117,14 +107,9 @@ import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Button from "primevue/button";
-import Dialog from "primevue/dialog";
 import SpellEffectIcon from "./SpellEffectIcon.vue";
-import InitiativeData from "./InitiativeData.vue";
-import { SERVER_EMITS } from "../../../data/emitFunctions";
 import { useToast } from "primevue/usetoast";
-import CharacterActions from "./CharacterActions.vue";
 import CurrentButton from "./CurrentButton.vue";
-import { getsessionId } from "../../../data/sessionStore";
 import EditDeleteButtons from "../EditDeleteButtons.vue";
 import { ComponentIs } from "../componentTypes";
 import MobileMenu from "../spells/MobileMenu.vue";

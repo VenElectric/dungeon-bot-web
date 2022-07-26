@@ -7,7 +7,6 @@ import "primevue/resources/primevue.min.css";
 import "primeicons/primeicons.css";
 import "primeflex/primeflex.css";
 import Tooltip from "primevue/tooltip";
-import store from "./data/store";
 import rollData from "./data/rollStore";
 import spellStore from "./data/spellStore";
 import ConfirmationService from "primevue/confirmationservice";
@@ -15,7 +14,6 @@ import ToastService from "primevue/toastservice";
 import BadgeDirective from "primevue/badgedirective";
 
 createApp(App)
-  .provide("store", store)
   .provide("rollData", rollData)
   .provide("spellStore", spellStore)
   .directive("tooltip", Tooltip)

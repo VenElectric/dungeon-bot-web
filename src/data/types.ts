@@ -6,11 +6,7 @@ import {
   SpellObject,
 } from "../Interfaces/Spells";
 import { Socket } from "socket.io-client";
-import {
-  PickListMoveAllToSourceEvent,
-  PickListMoveToSourceEvent,
-  PickListSelectionChangeEvent,
-} from "primevue/picklist";
+import { PickListMoveAllToSourceEvent } from "primevue/picklist";
 import {
   CollectionTypes,
   InitiativeObjectEnums,
@@ -128,10 +124,9 @@ export interface InitiativeStoreInterface {
   };
   SETTERS: {
     addSpellEffect(data: StatusEffect, id: string): void;
-    addSpellEffectToAll(data: StatusEffect[], initId: string): void;
+    addSpellEffectToAll(data: StatusEffect): void;
     removeSpellEffect(spellId: string, characterId: string): void;
     removeSpellEffectFromAll(spellId: string): void;
-    deleteInitiative(id: string): void;
     updateAllInitiative(data: InitiativeObject[]): void;
     updateCharacterRecord(initiative: InitiativeObject): void;
     alltoFalse(): void;
@@ -141,6 +136,7 @@ export interface InitiativeStoreInterface {
     onDrop(evt: any): void;
     moveUp(index: number): void;
     moveDown(index: number): void;
+    deleteInitiative(id: string): void;
     setCurrent(index: number): void;
     resetInitiative(): void;
   };

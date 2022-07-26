@@ -36,3 +36,20 @@ async function updateCharacter(characterData: any, userId: string) {
     }
   }
 }
+
+async function getCharacterList(userId: string) {
+  try {
+    const response = await axios.post(
+      `${endpoints.default}${endpoints.characterPOST}`,
+      {
+        data: { userId: userId },
+      }
+    );
+
+    return response.status;
+  } catch (error) {
+    if (error instanceof Error) {
+      return error.message;
+    }
+  }
+}

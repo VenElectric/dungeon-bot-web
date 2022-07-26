@@ -25,6 +25,17 @@
         class="p-button p-button-info p-button-sm"
       />
     </template>
+    <template #end>
+      <!-- <Button
+        class="p-button mx-2 consent-button text-center"
+        v-for="color in consentColors"
+        :key="color"
+        :icon="getIcon(color)"
+        :data-color="color"
+        @click.prevent="consentClick(color)"
+        :style="{ backgroundColor: color, borderColor: color, color: 'black' }"
+      /> -->
+    </template>
   </Toolbar>
 
   <div class="session-large flex-row flex-wrap justify-content-evenly">
@@ -59,18 +70,17 @@
     :style="{ width: '450px' }"
     header="Custom Rolls"
     :modal="true"
-    ><CustomRoll></CustomRoll
-  ></Dialog>
+  >
+    <CustomRoll></CustomRoll>
+  </Dialog>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, inject, onMounted } from "vue";
+import { defineComponent, ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import Toolbar from "primevue/toolbar";
 import Button from "primevue/button";
-import { IStore } from "../data/types";
 import { CollectionTypes } from "../Interfaces/ContextEnums";
-import SocketReceiver from "../components/gamesession/SocketReceiver.vue";
 import { useConfirm } from "primevue/useconfirm";
 import { useToast } from "primevue/usetoast";
 import ConfirmPopup from "primevue/confirmpopup";
@@ -86,6 +96,9 @@ import SpellInitialize from "../components/gamesession/spells/SpellInitialize.vu
 import InitiativeInitialize from "../components/gamesession/initiative/InitiativeInitialize.vue";
 import SPELL_FUNCS from "../data/spellStore";
 import INITIATIVE_FUNCS from "../data/initiativeStore";
+import { toDiscord } from "../data/utilities";
+import { AuthState } from "../firesinit";
+import { getAuth } from "@firebase/auth";
 
 // css to make columns instead of rows for each item (init, spell, info)
 export default defineComponent({
@@ -104,13 +117,22 @@ export default defineComponent({
   },
   setup() {
     const route = useRoute();
-    const store = inject<IStore>("store");
     const display = ref(false);
     const confirm = useConfirm();
     const toast = useToast();
     const paramsId = String(route.params.id);
+    const { user, error, isAuthenticated } = AuthState();
+    const auth = getAuth();
+    console.log(auth.currentUser);
+    console.log(user.value);
     if (paramsId) {
       updateId(paramsId);
+      roomSetup();
+      serverLogger(
+        LoggingTypes.info,
+        `sending emit to create room`,
+        ComponentEnums.GAMESESSION
+      );
       serverLogger(
         LoggingTypes.debug,
         `updating session Id`,
@@ -118,10 +140,34 @@ export default defineComponent({
         paramsId
       );
     }
-    let op = ref(null);
+
+    const consentColors = ["green", "yellow", "red", "white", "blue"];
+
+    function getIcon(color: string) {
+      switch (color) {
+        case "green":
+          return "pi pi-check-circle";
+        case "yellow":
+          return "pi pi-exclamation-triangle";
+        case "red":
+          return "pi pi-times-circle";
+        case "white":
+          return "pi pi-clock";
+        case "blue":
+          return "pi pi-comment";
+        default:
+          return;
+      }
+    }
+
+    function consentClick(color: string) {
+      if (auth.currentUser) {
+        console.log(`${auth.currentUser.displayName} is signaling ${color}`);
+      }
+    }
 
     function spellMessage() {
-      store?.toDiscord(CollectionTypes.SPELLS);
+      toDiscord(CollectionTypes.SPELLS);
       toast.add({
         severity: "success",
         summary: "Success Message",
@@ -135,7 +181,7 @@ export default defineComponent({
       );
     }
     function initiativeMessage() {
-      // INITIATIVE_FUNCS.EMITS.toDiscord(CollectionTypes.INITIATIVE);
+      toDiscord(CollectionTypes.INITIATIVE);
       toast.add({
         severity: "success",
         summary: "Success Message",
@@ -191,29 +237,28 @@ export default defineComponent({
       });
     };
 
-    onMounted(() => {
-      if (paramsId !== undefined) {
-        roomSetup();
-        serverLogger(
-          LoggingTypes.info,
-          `Onmounted, sending emit to create room`,
-          ComponentEnums.GAMESESSION
-        );
-      }
-    });
-
     return {
       spellMessage,
       initiativeMessage,
       confirm1,
       display,
       modalOpen,
+      consentColors,
+      getIcon,
+      consentClick,
     };
   },
 });
 </script>
 
 <style>
+.consent-button {
+  transition: 1s;
+}
+.consent-button:hover {
+  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.637),
+    0 0 0 5px rgba(0, 190, 255, 0.2);
+}
 .column-container {
   width: fit-content;
 }

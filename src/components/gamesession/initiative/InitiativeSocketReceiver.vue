@@ -6,7 +6,6 @@ import { InitiativeObject } from "../../../Interfaces/initiative";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import { EmitTypes } from "../../../Interfaces/EmitTypes";
 import serverLogger from "../../../Utils/LoggingClass";
-import { InitiativeObjectEnums } from "../../../Interfaces/Enums";
 import { useToast } from "primevue/usetoast";
 import SPELL_FUNCS from "../../../data/spellStore";
 import ROLL_FUNCS from "../../../data/rollStore";
@@ -14,7 +13,7 @@ import Toast from "primevue/toast";
 import Dialog from "primevue/dialog";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
-import { RollObject } from "@/src/Interfaces/Rolls";
+import { RollObject } from "../../../Interfaces/Rolls";
 
 const toast = useToast();
 const socket = getSocket();

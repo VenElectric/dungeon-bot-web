@@ -1,10 +1,27 @@
+<script setup lang="ts">
+import { PropType, defineProps, ref } from "vue";
+import {
+  AbilityScores,
+  AbilityScoresObj,
+} from "../../Interfaces/Common/AbilityScores";
+
+const props = defineProps({
+  abilityScoreValues: {
+    type: Object as PropType<Record<string, AbilityScoresObj>>,
+    required: true,
+  },
+});
+
+const abilityScoreRef = ref(props.abilityScoreValues);
+</script>
+
 <template>
   <div class="main">
     <div
       class="inputgroup"
-      :data-tool-tip="item"
-      v-for="item in ability"
-      :key="item"
+      :data-tool-tip="key"
+      v-for="key in Object.keys(AbilityScores)"
+      :key="key"
     >
       <input id="text" type="text" class="text-bubble" />
       <div class="plus">
@@ -12,28 +29,18 @@
       </div>
     </div>
     <div class="saving">
-      <div v-for="item in ability" :key="item + `save`">
+      <div v-for="key in Object.keys(AbilityScores)" :key="`${key}save`">
         <div>
-          <input type="text" class="mod-bubble" />
+          <input
+            type="text"
+            class="mod-bubble"
+            :v-model="abilityScoreRef[key]"
+          />
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<script lang="ts">
-import { defineComponent } from "vue";
-import { ability_scores } from "../../assets/static";
-
-export default defineComponent({
-  name: "AbilityScores",
-  data() {
-    return {
-      ability: ability_scores,
-    };
-  },
-});
-</script>
 
 <style lang="scss" scoped>
 .main {

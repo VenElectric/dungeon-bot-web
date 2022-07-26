@@ -198,7 +198,6 @@ const INITIATIVE_FUNCS = {
       console.log(index);
       console.log(isSorted.value);
       if (index === initiativeList.value.length - 1) {
-        console.log("=== move down");
         return;
       }
       if (!isSorted.value) return;
@@ -237,10 +236,6 @@ const INITIATIVE_FUNCS = {
         `character removed, sort reset`,
         StoreEnums.removeCharacter
       );
-      // this should be outside of this function
-      // if (sessionData.spells.length > 0) {
-      //   removeCharacterFromSpells(id);
-      // }
     },
     setCurrent(index: number): void {
       serverLogger(

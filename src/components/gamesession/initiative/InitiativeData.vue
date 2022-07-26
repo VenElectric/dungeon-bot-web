@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { reactive, computed, defineProps, ref } from "vue";
+import { computed, defineProps, ref } from "vue";
 import { InitiativeObject } from "../../../Interfaces/initiative";
 import ClickIcon from "../../ClickIcon.vue";
 import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
-import { InitiativeStoreInterface } from "../../../data/types";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
 import Button from "primevue/button";
 import { v4 as uuidv4 } from "uuid";
-import { rollDice } from "../../commonFunctions";
+import ROLL_FUNCS from "../../../data/rollStore";
 import INITIATIVE_FUNCS from "../../../data/initiativeStore";
 import SPELL_FUNCS from "../../../data/spellStore";
 
@@ -34,6 +33,12 @@ const {
   SETTERS: spellSetters,
   EMITS: spellEmits,
 } = SPELL_FUNCS;
+
+const {
+  GETTERS: rollGetters,
+  SETTERS: rollSetters,
+  EMITS: rollEmits,
+} = ROLL_FUNCS;
 
 const record = ref<InitiativeObject>({
   id: "",
@@ -67,9 +72,8 @@ function submitData(e: any) {
     spellSetters.initializeSpellStoreCharacterIds(record.value);
     spellEmits.emitUpdateAllSpells();
     initEmits.createNewInitiative(record.value);
-    console.log(record.value);
   }
-  if (props.toggle !== undefined) {
+  if (props.toggle) {
     props.toggle(e);
   }
 }
@@ -93,7 +97,7 @@ function submitData(e: any) {
 //   }
 // }
 function updateRoll() {
-  const rollTotal = rollDice("d20");
+  const rollTotal = rollGetters.rollDice("d20");
   record.value.initiative = rollTotal.total + record.value.initiativeModifier;
   toast.add({
     severity: "info",
