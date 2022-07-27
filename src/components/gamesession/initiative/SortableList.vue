@@ -13,7 +13,7 @@
       :reorderableColumn="false"
       class="column-large-screen"
     ></Column>
-    <Column header="Current Turn" field="isCurrent" class="column-large-screen">
+    <Column header="Current Turn" field="isCurrent">
       <template #body="{ index }">
         <current-button
           :record="initData[index]"
@@ -40,7 +40,7 @@
     </Column>
     <Column header="Character Name" field="characterName" class="text-center">
       <template #body="{ data, field }">
-        {{ data[field] }}
+        <span>{{ data[field] }}</span>
       </template>
     </Column>
     <Column
@@ -53,11 +53,6 @@
             :index="index"
             :componentType="ReturnTypes.INITIATIVE"
           ></mobile-menu>
-          <!-- <CharacterActions
-            :characterData="data"
-            :index="index"
-            :modalOpen="modalOpen"
-          ></CharacterActions> -->
         </div>
       </template>
     </Column>

@@ -11,6 +11,7 @@ import { CollectionTypes } from "../../Interfaces/ContextEnums";
 import { LoggingTypes, ComponentEnums } from "../../Interfaces/LoggingTypes";
 import serverLogger from "../../Utils/LoggingClass";
 import CustomRoll from "./rolls/CustomRoll.vue";
+import ConfirmPopup from "primevue/confirmpopup";
 
 const toast = useToast();
 const display = ref(false);

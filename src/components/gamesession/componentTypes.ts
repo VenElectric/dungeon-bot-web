@@ -3,10 +3,7 @@ import { SpellObject } from "../../Interfaces/Spells";
 import {
   SpellStoreInterface,
   InitiativeStoreInterface,
-} from "@/src/data/types";
-import AddSpell from "./spells/AddSpell.vue";
-import AddInitiative from "./initiative/AddInitiative.vue";
-import SpellTargets from "./spells/SpellTargets.vue";
+} from "../../data/types";
 
 export enum ComponentIs {
   AddSpell = "AddSpell",

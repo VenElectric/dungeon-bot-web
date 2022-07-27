@@ -249,10 +249,8 @@ const SPELL_FUNCS = {
     changeOneCharacterToTarget(e: CharacterPickListEvent, index: number): void {
       try {
         const characterId = e.items[0].id;
-        console.log(e.items[0], "character data");
+        
         const initiativeTemp = initiativeStore.GETTERS.getInitiative();
-        console.log(initiativeTemp);
-        console.log(characterId);
         const characterIndex = findIndexById(initiativeTemp.value, characterId);
         serverLogger(
           LoggingTypes.info,
@@ -356,7 +354,6 @@ const SPELL_FUNCS = {
         );
         try {
           SPELL_FUNCS.SETTERS.updateAllSpells(spells);
-          console.log(spellStore.value);
         } catch (error) {
           if (error instanceof Error) {
             serverLogger(

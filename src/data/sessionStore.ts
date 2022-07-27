@@ -1,12 +1,11 @@
 import { io } from "socket.io-client";
 import { ref } from "vue";
 import { LoggingTypes, StoreEnums } from "../Interfaces/LoggingTypes";
+import { API_URL } from "../assets/static";
 import serverLogger from "../Utils/LoggingClass";
 
-const socketString = "http://localhost:5000";
-const productionString = "https://dungeon-bot-server.herokuapp.com";
-
-const socket = ref(io(socketString));
+// @ts-ignore
+const socket = ref(io(API_URL[process.env.NODE_ENV]));
 const sessionId = ref("");
 
 export function getSocket(): any {
