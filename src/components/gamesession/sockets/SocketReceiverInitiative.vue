@@ -29,6 +29,7 @@ const columns = [
 ];
 
 onMounted(() => {
+  console.log("Mounted Socket Receiver");
   socket.on(EmitTypes.UPDATE_SESSION, (isSorted: boolean) => {
     if (isSorted === undefined) {
       console.log("undefined");
@@ -250,6 +251,7 @@ onMounted(() => {
         isArray.value = false;
       }
       display.value = true;
+      console.log("next");
       serverLogger(
         LoggingTypes.info,
         `${EmitTypes.NEXT} modal launched`,
@@ -323,8 +325,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <Toast />
-  <Dialog v-model:visible="display" header="Turn Status" :closable="true">
+  <Dialog
+    v-model:visible="display"
+    header="Turn Status"
+    :closable="true"
+    :dismissableMask="true"
+  >
     <h3>Current Turn: {{ currentName }}</h3>
     <div v-if="isArray" class="status-container">
       <DataTable :value="statuses" class="shadow-8 p-datatable-sm">
@@ -335,21 +341,6 @@ onMounted(() => {
           :key="col.field"
         />
       </DataTable>
-      <!-- <div class="flex justify-content-evenly align-items-center">
-        <h4>Spell name</h4>
-        |
-        <h4>Spell Effect</h4>
-      </div>
-      <hr />
-      <div>
-        <div v-for="status in statuses" :key="status.id">
-          <div class="flex justify-content-evenly align-items-center">
-            {{ status.spellName }} | {{ status.effectDescription }}
-          </div>
-
-          <hr />
-        </div>
-      </div> -->
     </div>
     <div v-else>No Status Effects</div>
   </Dialog>

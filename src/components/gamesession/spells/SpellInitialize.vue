@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { SpellStoreInterface } from "../../../data/types";
-import { inject, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import serverLogger from "../../../Utils/LoggingClass";
 import SPELL_FUNCS from "../../../data/spellStore";
 import SpellState from "./SpellState.vue";
-import SpellSocketReceiver from "./SpellSocketReceiver.vue";
 
 const error = ref();
 const loading = ref(true);
@@ -29,7 +27,6 @@ onMounted(() => {
   <div v-if="loading">
     <h2>Loading data...</h2>
   </div>
-  <SpellSocketReceiver></SpellSocketReceiver>
   <SpellState
     :spellEmits="spellEmits"
     :spellGetters="spellGetters"

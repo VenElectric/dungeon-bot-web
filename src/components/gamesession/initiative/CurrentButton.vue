@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { PropType, defineProps, ref, watch } from "vue";
 import Button from "primevue/button";
-import { InitiativeObject } from "@/src/Interfaces/initiative";
+import { InitiativeObject } from "../../../Interfaces/initiative";
 
 const props = defineProps({
   index: { type: Number, required: true },

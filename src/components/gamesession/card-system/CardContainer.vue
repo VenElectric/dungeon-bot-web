@@ -1,13 +1,22 @@
 <script setup lang="ts">
 import ConsentCard from "./ConsentCard.vue";
 
-const consentcolors = ["green", "yellow", "red", "white", "blue"];
+const consentcolors = [
+  { color: "green", icon: "pi pi-check-circle" },
+  { color: "yellow", icon: "pi pi-exclamation-triangle" },
+  { color: "red", icon: "pi pi-times-circle" },
+  { color: "white", icon: "pi pi-clock" },
+  { color: "blue", icon: "pi pi-comment" },
+];
 </script>
 
 <template>
-  <div class="flex justify-content-evenly">
-    <ConsentCard v-for="color in consentcolors" :bg="color" :key="color" />
-  </div>
+    <ConsentCard
+      v-for="record in consentcolors"
+      :color="record.color"
+      :icon="record.icon"
+      :key="record.color"
+    />
 </template>
 
 <style></style>

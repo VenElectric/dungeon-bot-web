@@ -1,6 +1,5 @@
 <template>
-  <Toast />
-  <div class="w-max">
+  <div class="w-auto">
     <ToolBar class="shadow-8 button-toolbar-lg">
       <template #start>
         <div v-if="!isSorted">
@@ -41,7 +40,7 @@
           class="p-button-sm"
         />
         <OverlayPanel ref="op" :showCloseIcon="true" :dismissable="true">
-          <InitiativeData :toggle="toggleAdd" />
+          <InitiativeForm :toggle="toggleAdd" />
         </OverlayPanel>
       </template>
     </ToolBar>
@@ -67,7 +66,7 @@
       <template #end>
         <Button icon="pi pi-plus" @click="toggleAdd"></Button>
         <OverlayPanel ref="op" :showCloseIcon="true" :dismissable="true">
-          <InitiativeData :toggle="toggleAdd" />
+          <InitiativeForm :toggle="toggleAdd" />
         </OverlayPanel>
       </template>
     </ToolBar>
@@ -81,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { PropType, defineProps } from "vue";
+import { PropType, defineProps, onMounted, onUnmounted } from "vue";
 import { InitiativeStoreInterface } from "../../../data/types";
 import { ref } from "vue";
 import OverlayPanel from "primevue/overlaypanel";
@@ -94,10 +93,11 @@ import ConfirmPopup from "primevue/confirmpopup";
 import Toast from "primevue/toast";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
-import InitiativeData from "./InitiativeData.vue";
-import { InitiativeObject } from "@/src/Interfaces/initiative";
+import InitiativeForm from "./InitiativeForm.vue";
+import { InitiativeObject } from "../../../Interfaces/initiative";
 import TieredMenu from "primevue/tieredmenu";
 import ResetStore from "../ResetStore.vue";
+import { getWindowWidth } from "../../../data/windowStore";
 
 const props = defineProps({
   initSetters: {
@@ -130,49 +130,6 @@ function toggleAdd(event: any) {
 
 function toggleHam(event: any) {
   (hamRef.value as any).toggle(event);
-}
-
-function addCharacter(e: any, data: InitiativeObject) {
-  // toggle add menu off
-  toggleAdd(e);
-  serverLogger(
-    LoggingTypes.info,
-    `adding toast and adding character`,
-    ComponentEnums.INITIATIVESTATE
-  );
-  toast.add({
-    severity: "info",
-    summary: "Info Message",
-    detail: `Adding ${data.characterName} to the list.`,
-    life: 3000,
-  });
-
-  if (props.initGetters.getSorted().value === true) {
-    props.initSetters.updateSorted(false);
-    toast.add({
-      severity: "warn",
-      summary: "Reset",
-      detail:
-        "Sort has been reset due to added character. Click Round Start to sort.",
-      life: 3000,
-    });
-  }
-  try {
-    props.initSetters.addCharacter(data);
-    serverLogger(
-      LoggingTypes.info,
-      `adding toast and adding character`,
-      ComponentEnums.INITIATIVESTATE
-    );
-  } catch (error) {
-    if (error instanceof Error) {
-      serverLogger(
-        LoggingTypes.alert,
-        error.message,
-        ComponentEnums.INITIATIVESTATE
-      );
-    }
-  }
 }
 
 const confirmReset = (event: MouseEvent) => {

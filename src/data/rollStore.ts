@@ -22,14 +22,13 @@ const ROLL_FUNCS = {
     rollDice(diceRoll: string): DiceRoll {
       return roller.value.roll(diceRoll) as DiceRoll;
     },
-    tryRoll(roll: string): any {
+    tryRoll(roll: string): unknown | Error | DiceRoll {
       let errorMsg;
       try {
         ROLL_FUNCS.GETTERS.rollDice(roll);
       } catch (error) {
         errorMsg = error;
       }
-      console.log(typeof errorMsg);
       return errorMsg;
     },
     getRollbyIndex(index: number): RollObject {
@@ -90,6 +89,8 @@ const ROLL_FUNCS = {
     },
     emitAddRoll(roll: RollObject): void {
       const sessionId = getsessionId();
+      console.log(sessionId)
+      console.log("emitting roll")
       socket.emit(EmitTypes.CREATE_NEW_ROLL, {
         rollData: roll,
         sessionId: sessionId,

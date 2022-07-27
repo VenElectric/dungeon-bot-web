@@ -2,7 +2,6 @@
 import { computed, defineProps, ref } from "vue";
 import { InitiativeObject } from "../../../Interfaces/initiative";
 import ClickIcon from "../../ClickIcon.vue";
-import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
@@ -78,24 +77,6 @@ function submitData(e: any) {
   }
 }
 
-// function handleChange(e: any, ObjectType: InitiativeObjectEnums) {
-//   serverLogger(
-//     LoggingTypes.debug,
-//     `updating reactive object init ${ObjectType}`,
-//     ComponentEnums.ADDINITIATIVE
-//   );
-//   switch (ObjectType) {
-//     case InitiativeObjectEnums.characterName:
-//       data.characterName = e;
-//       break;
-//     case InitiativeObjectEnums.initiative:
-//       data.initiative = e;
-//       break;
-//     case InitiativeObjectEnums.initiativeModifier:
-//       data.initiativeModifier = e;
-//       break;
-//   }
-// }
 function updateRoll() {
   const rollTotal = rollGetters.rollDice("d20");
   record.value.initiative = rollTotal.total + record.value.initiativeModifier;
@@ -113,7 +94,6 @@ function updateNPC() {
 </script>
 
 <template>
-  <Toast />
   <div class="p-grid p-field m-2">
     <div class="p-inputgroup p-col input-value">
       <Button icon="pi pi-info-circle" class="p-button-sm p-button-success" />

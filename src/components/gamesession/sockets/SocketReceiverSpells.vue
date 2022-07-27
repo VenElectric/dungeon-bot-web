@@ -7,7 +7,6 @@ import { EmitTypes } from "../../../Interfaces/EmitTypes";
 import serverLogger from "../../../Utils/LoggingClass";
 import { SpellObjectEnums } from "../../../Interfaces/Enums";
 import { useToast } from "primevue/usetoast";
-import Toast from "primevue/toast";
 import { onMounted } from "vue";
 
 const toast = useToast();
@@ -163,5 +162,4 @@ onMounted(() => {
 </script>
 
 <template>
-  <Toast />
 </template>

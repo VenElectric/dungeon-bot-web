@@ -3,8 +3,8 @@ import { onMounted, ref } from "vue";
 import { LoggingTypes } from "../../../Interfaces/LoggingTypes";
 import serverLogger from "../../../Utils/LoggingClass";
 import INITIATIVE_FUNCS from "../../../data/initiativeStore";
-import InitiativeState from "./InitiativeState.vue";
-import InitiativeSocketReceiver from "./InitiativeSocketReceiver.vue";
+import InitiativeContainer from "./InitiativeContainer.vue";
+import ROLL_FUNCS from "../../../data/rollStore";
 
 const errorRef = ref();
 const loading = ref(true);
@@ -17,6 +17,7 @@ const initData = ref(initGetters.getInitiative());
 onMounted(() => {
   try {
     initEmits.getInitial();
+    ROLL_FUNCS.SETTERS.getInitialRolls();
     serverLogger(LoggingTypes.info, `retrieved spellData`, `SpellInitialize`);
     loading.value = false;
   } catch (error) {
@@ -34,8 +35,7 @@ onMounted(() => {
   <div v-if="loading">
     <h2>Loading data...</h2>
   </div>
-  <InitiativeSocketReceiver />
-  <InitiativeState
+  <InitiativeContainer
     :initEmits="initEmits"
     :initGetters="initGetters"
     :initSetters="initSetters"

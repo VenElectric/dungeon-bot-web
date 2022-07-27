@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import Card from "primevue/card";
+import Button from "primevue/button";
 import { ref, defineProps } from "vue";
 
 const props = defineProps({
-  bg: {
+  color: {
     type: String,
     required: true,
   },
+  icon: { type: String, required: true}
 });
 
-const bgColor = ref(props.bg);
+const bgColor = ref(props.color);
+
+function consentClick(color: string){
+  console.log(color)
+}
 </script>
 
 <template>
-  <Card class="consent-card shadow-4">
-    <template #header>
-      <div></div>
-    </template>
-    <template #content>
-      <h2 class="">{{ bgColor.toUpperCase }}</h2>
-    </template>
-  </Card>
+  <Button
+        class="p-button mx-2 consent-button text-center"
+        :icon="icon"
+        @click.prevent="consentClick(color)"
+        :style="{ backgroundColor: bgColor, borderColor: bgColor, color: 'black' }"
+      />
 </template>
 
 <style>
-.consent-card {
-  background-color: v-bind(bgColor) !important;
-  width: 10vw;
-  height: 30vh;
-  transition: 0.5s;
+.consent-button {
+  transition: 1s;
 }
-.consent-card:hover {
-  width: 12vw;
-  height: 32vh;
+.consent-button:hover {
+  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.637),
+    0 0 0 5px rgba(0, 190, 255, 0.2);
 }
 </style>

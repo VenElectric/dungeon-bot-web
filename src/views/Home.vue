@@ -224,30 +224,10 @@
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, reactive } from "vue";
+<script setup lang="ts">
 import Button from "primevue/button";
-import Divider from "primevue/divider";
 import Fieldset from "primevue/fieldset";
 import Card from "primevue/card";
-
-export default defineComponent({
-  name: "Home",
-  components: { Button, Fieldset, Card },
-  setup() {
-    const data = reactive({
-      items: [
-        {
-          id: "1234",
-          title: "A",
-        },
-        { id: "5678", title: "B" },
-        { id: "0564", title: "C" },
-      ],
-    });
-    return { data };
-  },
-});
 </script>
 
 <style scoped>

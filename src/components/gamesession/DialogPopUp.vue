@@ -2,7 +2,7 @@
 import { defineProps, PropType, watchEffect, ref } from "vue";
 import { ComponentIs } from "./componentTypes";
 import AddSpell from "./spells/AddSpell.vue";
-import InitiativeData from "./initiative/InitiativeData.vue";
+import InitiativeData from "./initiative/InitiativeForm.vue";
 import SpellTargets from "./spells/SpellTargets.vue";
 import EffectContainer from "./initiative/EffectContainer.vue";
 

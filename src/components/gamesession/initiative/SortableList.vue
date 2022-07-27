@@ -84,18 +84,6 @@
       </template>
     </Column>
   </DataTable>
-
-  <!-- <Dialog
-    v-model:visible="editInit"
-    :style="{ width: '450px' }"
-    header="Edit Initiative"
-    :modal="true"
-  >
-    <InitiativeData
-      :initiativeRecord="recordValue"
-      :saveCharacter="modalClose"
-    ></InitiativeData>
-  </Dialog> -->
 </template>
 
 <script setup lang="ts">

@@ -1,3 +1,17 @@
+<script setup lang="ts">
+import { onMounted, onUnmounted } from "vue";
+import { updateWidth } from "./data/windowStore";
+
+updateWidth(window.innerWidth);
+
+onMounted(() => {
+  window.addEventListener("resize",() =>  updateWidth(window.innerWidth));
+});
+
+onUnmounted(() => {
+  window.removeEventListener("resize",() =>  updateWidth(window.innerWidth));
+});
+</script>
 <template>
   <!-- <div id="nav">
     <router-link to="/">Home</router-link> |

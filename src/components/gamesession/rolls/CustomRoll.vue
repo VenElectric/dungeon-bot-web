@@ -5,30 +5,25 @@ import Toolbar from "primevue/toolbar";
 import Button from "primevue/button";
 import RollIcon from "./RollIcon.vue";
 import Dialog from "primevue/dialog";
-import { computed, inject, ref } from "vue";
-import { IStore, RollStoreInterface } from "../../../data/types";
+import { Ref, ref } from "vue";
 import { ComponentEnums, LoggingTypes } from "../../../Interfaces/LoggingTypes";
 import serverLogger from "../../../Utils/LoggingClass";
 import { useToast } from "primevue/usetoast";
-import { isError } from "../../typeChecking";
 import RollForm from "./RollForm.vue";
+import ROLL_FUNCS from "../../../data/rollStore";
 
-const store = inject<IStore>("store");
-const rollData = inject<RollStoreInterface>("rollData");
+const {
+  GETTERS: rollGetters,
+  SETTERS: rollSetters,
+  EMITS: rollEmits,
+} = ROLL_FUNCS;
 const toast = useToast();
-
-if (store === undefined || rollData === undefined) {
-  serverLogger(
-    LoggingTypes.alert,
-    `Failed to inject store`,
-    ComponentEnums.SPELLSTATE
-  );
-  throw new Error("Failed to inject stores");
-}
 // data refs
-const rolls = ref(computed(() => rollData?.ROLL_FUNCS.GETTERS.getRolls()));
+const rolls = ref(rollGetters.getRolls());
 
 // add roll
+// don't need for adding a roll, though I would rather require the value and send a blank string 
+// instead of not requiring a value
 const addRollName = ref("");
 const addRollValue = ref("");
 
@@ -37,33 +32,22 @@ const editIndex = ref(0);
 const editRollName = ref("");
 const editRollValue = ref("");
 
-const showError = ref(false);
-const errorClass = ref("");
-
 // modal refs
-const rollModal = ref(false);
 const addModal = ref(false);
 const editModal = ref(false);
 
-function addRoll(e: any) {
-  const rollObject = rollData?.ROLL_FUNCS.SETTERS.addRoll(
-    addRollName.value,
-    addRollValue.value
-  );
-  if (errorMessage(addRollValue.value)) return;
+function addRoll(e: Ref<{rollName: string, rollValue: string}>) {
+  const rollObject = rollSetters.addRoll(e.value.rollName, e.value.rollValue);
   closeAdd();
   if (rollObject) {
-    rollData?.ROLL_FUNCS.EMITS.emitAddRoll(rollObject);
+    console.log("emitting")
+    ROLL_FUNCS.EMITS.emitAddRoll(rollObject);
   }
-  addRollName.value = "";
-  addRollValue.value = "";
 }
 
 function editRoll() {
-  if (errorMessage(editRollValue.value)) return;
   closeEdit();
-  console.log(editRollValue);
-  rollData?.ROLL_FUNCS.SETTERS.updateRoll(
+  rollSetters.updateRoll(
     {
       id: rolls.value[editIndex.value].id,
       rollName: editRollName.value,
@@ -71,7 +55,7 @@ function editRoll() {
     },
     editIndex.value
   );
-  rollData?.ROLL_FUNCS.EMITS.emitUpdateRoll({
+  ROLL_FUNCS.EMITS.emitUpdateRoll({
     id: rolls.value[editIndex.value].id,
     rollName: editRollName.value,
     rollValue: editRollValue.value,
@@ -81,25 +65,14 @@ function editRoll() {
   editRollValue.value = "";
 }
 
-function errorMessage(rollValue: string) {
-  const isValid = rollData?.ROLL_FUNCS.GETTERS.tryRoll(rollValue);
-  if (isError(isValid)) {
-    errorClass.value = "p-invalid";
-    showError.value = true;
-    toast.add({
-      severity: "error",
-      summary: "Invalid",
-      detail: "Roll Format is Invalid",
-      life: 3000,
-    });
-    return true;
-  } else return false;
+function deleteRoll(index: number) {
+  const rollID = rolls.value[index].id
+  rollSetters.deleteRoll(index)
+  rollEmits.emitDeleteRoll(rollID)
 }
 
 function rollDiceDiscord(index: number) {
-  const newRoll = rollData?.ROLL_FUNCS.GETTERS.rollDice(
-    rolls.value[index].rollValue
-  );
+  const newRoll = rollGetters.rollDice(rolls.value[index].rollValue);
 
   toast.add({
     severity: "success",
@@ -108,10 +81,7 @@ function rollDiceDiscord(index: number) {
     life: 3000,
   });
   if (newRoll) {
-    rollData?.ROLL_FUNCS.EMITS.discordRoll(
-      newRoll,
-      rolls.value[index].rollName
-    );
+    ROLL_FUNCS.EMITS.discordRoll(newRoll, rolls.value[index].rollName);
   }
 }
 
@@ -150,6 +120,7 @@ const closeEdit = (): void => {
           :rollName="addRollName"
           :rollValue="addRollValue"
           @save="addRoll"
+          :tryRoll="rollGetters.tryRoll"
         />
       </Dialog>
     </template>
@@ -177,7 +148,7 @@ const closeEdit = (): void => {
       </template>
     </Column>
     <Column header="Edit/Delete" class="column-large-screen">
-      <template #body="{ data, index }">
+      <template #body="{ index }">
         <Button
           icon="pi pi-pencil"
           class="p-button-rounded p-button-success mr-2"
@@ -187,18 +158,18 @@ const closeEdit = (): void => {
           v-model:visible="editModal"
           :style="{ width: '450px' }"
           header="Edit Roll"
-          :modal="true"
         >
           <RollForm
             :rollName="editRollName"
             :rollValue="editRollValue"
             @save="editRoll"
+            :tryRoll="rollGetters.tryRoll"
           />
         </Dialog>
         <Button
           icon="pi pi-trash"
           class="p-button-rounded p-button-danger"
-          @click="() => rollData.ROLL_FUNCS.SETTERS.deleteRoll(data.id, index)"
+          @click="deleteRoll(index)"
         />
       </template>
     </Column>
