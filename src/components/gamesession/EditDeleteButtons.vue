@@ -51,7 +51,7 @@ function emitAndDelete() {
 }
 
 const headerText = computed(() => {
-  return props.componentType == ComponentIs.InitiativeData
+  return props.componentType == ComponentIs.InitiativeForm
     ? "Edit Initiative"
     : "Edit Spell";
 });

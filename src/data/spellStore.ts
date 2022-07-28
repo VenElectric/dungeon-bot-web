@@ -407,6 +407,10 @@ const SPELL_FUNCS = {
       const sessionId = getsessionId();
       socket.emit(EmitTypes.DELETE_ALL_SPELL, sessionId);
     },
+    discord(): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.DISCORD_SPELLS, sessionId);
+    }
   },
 };
 

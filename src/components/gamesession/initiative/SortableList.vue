@@ -49,10 +49,10 @@
     >
       <template #body="{ index }">
         <div class="flex justify-content-center">
-          <mobile-menu
+          <MobileMenu
             :index="index"
             :componentType="ReturnTypes.INITIATIVE"
-          ></mobile-menu>
+          ></MobileMenu>
         </div>
       </template>
     </Column>
@@ -74,7 +74,7 @@
           :emitDeleteFunction="initEmits.deleteOneInitiative"
           :emitSaveFunction="initEmits.updateRecordInitiative"
           :saveFunction="initSetters.updateCharacterRecord"
-          :componentType="ComponentIs.InitiativeData"
+          :componentType="ComponentIs.InitiativeForm"
         />
       </template>
     </Column>
@@ -95,7 +95,7 @@ import { useToast } from "primevue/usetoast";
 import CurrentButton from "./CurrentButton.vue";
 import EditDeleteButtons from "../EditDeleteButtons.vue";
 import { ComponentIs } from "../componentTypes";
-import MobileMenu from "../spells/MobileMenu.vue";
+import MobileMenu from "../mobile/MobileMenu.vue";
 import { ReturnTypes } from "../MenuItemSetup";
 
 const props = defineProps({

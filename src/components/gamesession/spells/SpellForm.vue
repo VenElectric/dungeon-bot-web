@@ -77,7 +77,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, reactive, ref } from "vue";
+import { defineComponent, ref } from "vue";
 import { SpellObjectEnums } from "../../../Interfaces/ContextEnums";
 import Dropdown from "primevue/dropdown";
 import InputNumber from "primevue/inputnumber";
@@ -86,12 +86,11 @@ import Button from "primevue/button";
 import { SpellObject } from "../../../Interfaces/Spells";
 import serverLogger from "../../../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
-import { SpellStoreInterface } from "../../../data/types";
 import SPELL_FUNCS from "../../../data/spellStore";
 import INITIATIVE_FUNCS from "../../../data/initiativeStore";
 
 export default defineComponent({
-  name: "AddSpell",
+  name: "SpellForm",
   components: { Dropdown, InputNumber, InputText, Button },
   props: {
     index: { type: Number, required: false },

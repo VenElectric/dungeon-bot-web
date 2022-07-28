@@ -115,7 +115,7 @@ export function createInitiativeMenu(index: number): MenuObject {
   initMenu[0].command = () => {
     headerText.value = HeaderTextItems.EditInit;
     indexRef.value = index;
-    componentRef.value = ComponentIs.InitiativeData;
+    componentRef.value = ComponentIs.InitiativeForm;
     dialogRef.value = true;
   };
   initMenu[1].command = () => {
@@ -140,7 +140,7 @@ export function createInitiativeMenu(index: number): MenuObject {
     menu: initMenu,
     dialogRef: dialogRef,
     headerText: headerText.value,
-    componentRef: componentRef.value,
+    componentRef: componentRef,
     indexRef: indexRef,
   };
 }

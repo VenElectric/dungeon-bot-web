@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { defineProps, PropType, watchEffect, ref } from "vue";
 import { ComponentIs } from "./componentTypes";
-import AddSpell from "./spells/AddSpell.vue";
-import InitiativeData from "./initiative/InitiativeForm.vue";
-import SpellTargets from "./spells/SpellTargets.vue";
+import SpellForm from "./spells/SpellForm.vue";
+import InitiativeForm from "./initiative/InitiativeForm.vue"
+import SpellTargets from "./spells/SpellTargets.vue"
 import EffectContainer from "./initiative/EffectContainer.vue";
 
 const props = defineProps({
@@ -26,15 +26,18 @@ watchEffect(() => {
 });
 
 const componentToRender = (componentRef: ComponentIs) => {
+  console.log(componentRef)
   switch (componentRef) {
     case ComponentIs.AddSpell:
-      return AddSpell;
+      return SpellForm;
     case ComponentIs.EffectContainer:
       return EffectContainer;
-    case ComponentIs.InitiativeData:
-      return InitiativeData;
+    case ComponentIs.InitiativeForm:
+      return InitiativeForm;
     case ComponentIs.SpellTargets:
       return SpellTargets;
+    default:
+      console.log("default")
   }
 };
 </script>

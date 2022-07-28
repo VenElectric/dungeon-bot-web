@@ -55,6 +55,7 @@ onMounted(() => {
 
   socket?.on(EmitTypes.CREATE_NEW_INITIATIVE, (data: InitiativeObject) => {
     /// check if any data is undefined and then send a request to server for updating initiative list.
+    console.log("receiving new intiative")
     const isSorted = INIT_FUNCS.GETTERS.getSorted();
     if (isSorted) {
       INIT_FUNCS.SETTERS.updateSorted(false);
@@ -168,6 +169,7 @@ onMounted(() => {
   );
 
   socket.on(EmitTypes.DELETE_ONE_INITIATIVE, (docId: string) => {
+    console.log("delete one initiative")
     serverLogger(
       LoggingTypes.info,
       `${EmitTypes.DELETE_ONE_INITIATIVE} deleting`,
@@ -302,7 +304,8 @@ onMounted(() => {
       }
     }
   });
-  socket?.on(EmitTypes.ROUND_START, () => {
+  socket.on(EmitTypes.ROUND_START, () => {
+    console.log("round start")
     toast.add({
       severity: "info",
       summary: "Round Start",
@@ -325,6 +328,7 @@ onMounted(() => {
 </script>
 
 <template>
+<Toast />
   <Dialog
     v-model:visible="display"
     header="Turn Status"

@@ -4,7 +4,7 @@ import Button from "primevue/button";
 import OverlayPanel from "primevue/overlaypanel";
 import ResetStore from "../ResetStore.vue";
 import { defineProps, ref, PropType } from "vue";
-import AddSpell from "../spells/AddSpell.vue";
+import SpellForm from "./SpellForm.vue";
 import { SpellObject } from "../../../Interfaces/Spells";
 
 defineProps({
@@ -50,7 +50,7 @@ function toggle(event: any) {
         class="p-button-sm"
       />
       <OverlayPanel ref="overlayRef" :showCloseIcon="true" :dismissable="true">
-        <AddSpell :toggle="toggle"></AddSpell>
+        <SpellForm :toggle="toggle"></SpellForm>
       </OverlayPanel>
     </template>
   </ToolBar>

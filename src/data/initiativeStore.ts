@@ -134,6 +134,7 @@ const INITIATIVE_FUNCS = {
       );
 
       initiativeList.value.push(data);
+      INITIATIVE_FUNCS.SETTERS.updateSorted(false);
       serverLogger(
         LoggingTypes.debug,
         `emitting new character`,
@@ -387,6 +388,10 @@ const INITIATIVE_FUNCS = {
         docId: docId,
       });
     },
+    discord(): void {
+      const sessionId = getsessionId();
+      socket.emit(EmitTypes.DISCORD_INITIATIVE, sessionId);
+    }
   },
 };
 

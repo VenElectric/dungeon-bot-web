@@ -29,7 +29,9 @@ export enum EmitTypes {
   RESORT = "RESORT",
   DISCORD = "DISCORD",
   DISCORD_ROLL = "DISCORD_ROLL",
-} //socket.emit(EmitType)
+  DISCORD_SPELLS = "DISCORD_SPELLS",
+  DISCORD_INITIATIVE = "DISCORD_INITIATIVE"
+} 
 
 export interface SocketData {
   payload:

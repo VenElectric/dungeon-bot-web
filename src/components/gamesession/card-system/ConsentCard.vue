@@ -28,6 +28,7 @@ function consentClick(color: string){
 
 <style>
 .consent-button {
+  width: auto !important;
   transition: 1s;
 }
 .consent-button:hover {

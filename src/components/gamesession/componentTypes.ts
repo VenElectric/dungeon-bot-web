@@ -7,7 +7,7 @@ import {
 
 export enum ComponentIs {
   AddSpell = "AddSpell",
-  InitiativeData = "InitiativeData",
+  InitiativeForm = "InitiativeForm",
   SpellTargets = "SpellTargets",
   EffectContainer = "EffectContainer",
 }

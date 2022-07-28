@@ -3,7 +3,7 @@ import { onMounted, ref } from "vue";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import serverLogger from "../../../Utils/LoggingClass";
 import SPELL_FUNCS from "../../../data/spellStore";
-import SpellState from "./SpellState.vue";
+import SpellContainer from "./SpellContainer.vue";
 
 const error = ref();
 const loading = ref(true);
@@ -18,6 +18,7 @@ onMounted(() => {
   serverLogger(LoggingTypes.info, `retrieved spellData`, `SpellInitialize`);
   loading.value = false;
 });
+console.log("spell recursion?")
 </script>
 
 <template>
@@ -27,10 +28,10 @@ onMounted(() => {
   <div v-if="loading">
     <h2>Loading data...</h2>
   </div>
-  <SpellState
+  <SpellContainer
     :spellEmits="spellEmits"
     :spellGetters="spellGetters"
     :spellSetters="spellSetters"
     :spellData="spellData"
-  ></SpellState>
+  ></SpellContainer>
 </template>

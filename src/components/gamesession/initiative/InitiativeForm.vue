@@ -64,10 +64,10 @@ function submitData(e: any) {
   if (props.index !== undefined) {
     initSetters.updateCharacterRecord(record.value);
     initEmits.updateRecordInitiative(record.value);
-    console.log(record.value);
   } else {
     record.value.id = uuidv4();
     initSetters.addCharacter(record.value);
+    resetSorted();
     spellSetters.initializeSpellStoreCharacterIds(record.value);
     spellEmits.emitUpdateAllSpells();
     initEmits.createNewInitiative(record.value);
@@ -80,10 +80,22 @@ function submitData(e: any) {
 function updateRoll() {
   const rollTotal = rollGetters.rollDice("d20");
   record.value.initiative = rollTotal.total + record.value.initiativeModifier;
+  initSetters.updateSorted(false);
   toast.add({
     severity: "info",
     summary: "Roll Results",
     detail: `Dice Roll: ${rollTotal} and Initiative Total: ${record.value.initiative}`,
+    life: 3000,
+  });
+  resetSorted();
+}
+
+function resetSorted() {
+  initSetters.updateSorted(false);
+  toast.add({
+    severity: "warn",
+    summary: "Warning Message",
+    detail: "Initiative has been reset. Please click Round Start to resort.",
     life: 3000,
   });
 }
@@ -152,6 +164,7 @@ function updateNPC() {
         id="modifier"
         placeholder="Initiative Modifier"
         v-model="record.initiativeModifier"
+        @change="resetSorted"
       />
     </div>
   </div>

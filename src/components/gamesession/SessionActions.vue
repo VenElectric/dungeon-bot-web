@@ -6,8 +6,6 @@ import { useToast } from "primevue/usetoast";
 import { ref } from "vue";
 import INITIATIVE_FUNCS from "../../data/initiativeStore";
 import SPELL_FUNCS from "../../data/spellStore";
-import { toDiscord } from "../../data/utilities";
-import { CollectionTypes } from "../../Interfaces/ContextEnums";
 import { LoggingTypes, ComponentEnums } from "../../Interfaces/LoggingTypes";
 import serverLogger from "../../Utils/LoggingClass";
 import CustomRoll from "./rolls/CustomRoll.vue";
@@ -18,7 +16,7 @@ const display = ref(false);
 const confirm = useConfirm();
 
 function spellMessage() {
-  toDiscord(CollectionTypes.SPELLS);
+  SPELL_FUNCS.EMITS.discord();
   toast.add({
     severity: "success",
     summary: "Success Message",
@@ -32,7 +30,7 @@ function spellMessage() {
   );
 }
 function initiativeMessage() {
-  toDiscord(CollectionTypes.INITIATIVE);
+ INITIATIVE_FUNCS.EMITS.discord();
   toast.add({
     severity: "success",
     summary: "Success Message",

@@ -109,6 +109,7 @@ export interface SpellStoreInterface {
     emitNewSpell: (spell: SpellObject) => void;
     emitUpdateSpell: (spell: SpellObject) => void;
     emitUpdateAllSpells: () => void;
+    discord: () => void;
   };
 }
 
@@ -151,6 +152,7 @@ export interface InitiativeStoreInterface {
     updateRecordInitiative(initiative: InitiativeObject): void;
     deleteOneInitiative(docId: string): void;
     updateAllInitiative(): void;
+    discord(): void;
   };
 }
 

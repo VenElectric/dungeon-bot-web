@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { PropType, ref, defineProps, watchEffect } from "vue";
+import { PropType, ref, defineProps } from "vue";
 import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
 import serverLogger from "../../../Utils/LoggingClass";
 import TieredMenu from "primevue/tieredmenu";
 import Button from "primevue/button";
 import DialogPopUp from "../DialogPopUp.vue";
-import { SpellStoreInterface } from "../../../data/types";
 import { ReturnTypes, createMenuItem } from "../MenuItemSetup";
-import { CollectionTypes } from "../../../Interfaces/ContextEnums";
 import Dialog from "primevue/dialog";
 
 const props = defineProps({

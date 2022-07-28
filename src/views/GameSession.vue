@@ -4,12 +4,11 @@ import serverLogger from "../Utils/LoggingClass";
 import { LoggingTypes, ComponentEnums } from "../Interfaces/LoggingTypes";
 import TabView from "primevue/tabview";
 import TabPanel from "primevue/tabpanel";
-import { updateId, roomSetup } from "../data/sessionStore";
-import SpellInitialize from "../components/gamesession/spells/SpellInitialize.vue";
+import { updateId, roomSetup} from "../data/sessionStore";
+import SpellStartup from "../components/gamesession/spells/SpellStartup.vue";
 import InitiativeStartup from "../components/gamesession/initiative/InitiativeStartup.vue";
 import SocketReceiverContainer from "../components/gamesession/sockets/SocketReceiverContainer.vue";
 import TheToolbarActions from "../components/TheToolbarActions.vue";
-import Button from "primevue/button";
 import Toast from "primevue/toast";
 import { getWindowWidth } from "../data/windowStore";
 import { onMounted, onUnmounted, ref } from "vue";
@@ -47,10 +46,6 @@ onUnmounted(() => {
 });
 
 const breakPointWidths = { medium: 1300, small: 700 };
-
-function screenWidth() {
-  console.log(window.innerWidth);
-}
 </script>
 
 <template>
@@ -73,7 +68,7 @@ function screenWidth() {
 
     <div class="flex flex-column column-container md:col-4">
       <h1>Spell List</h1>
-      <SpellInitialize />
+      <SpellStartup />
     </div>
   </div>
   <div v-if="windowSize < breakPointWidths.small"  class="session-small mt-4">
@@ -85,7 +80,7 @@ function screenWidth() {
       </TabPanel>
       <TabPanel header="Spells">
         <div class="flex flex-column column-container">
-          <SpellInitialize />
+          <SpellStartup />
         </div>
       </TabPanel>
     </TabView>

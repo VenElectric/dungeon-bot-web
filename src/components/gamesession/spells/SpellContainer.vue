@@ -7,13 +7,12 @@ import ConfirmPopup from "primevue/confirmpopup";
 import Toast from "primevue/toast";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
-import SpellMobileMenu from "./SpellMobileMenu.vue";
 import EditDeleteButtons from "../EditDeleteButtons.vue";
-import ActionsToolbar from "./ActionsToolbar.vue";
+import ActionsToolbar from "./SpellActionsToolbar.vue";
 import { ComponentIs } from "../componentTypes";
 import OverlayPanel from "primevue/overlaypanel";
 import Button from "primevue/button";
-import MobileMenu from "./MobileMenu.vue";
+import MobileMenu from "../mobile/MobileMenu.vue";
 import { ReturnTypes } from "../MenuItemSetup";
 
 const props = defineProps({
@@ -48,14 +47,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="w-auto">
-    <toast />
-    <confirm-popup />
-    <actions-toolbar
+    <Toast />
+    <ConfirmPopup />
+    <ActionsToolbar
       :reset-spells="spellSetters.resetSpells"
       :emit-update-all-spells="spellEmits.emitUpdateAllSpells"
       :add-spell="spellSetters.addSpell"
       :emit-add-spell="spellEmits.emitNewSpell"
-    ></actions-toolbar>
+    ></ActionsToolbar>
     <DataTable
       :value="spellData"
       :paginator="true"
@@ -88,13 +87,13 @@ onBeforeUnmount(() => {
             :showCloseIcon="true"
             :dismissable="true"
           >
-            <spell-targets :index="index"></spell-targets>
+            <SpellTargets :index="index"></SpellTargets>
           </OverlayPanel>
         </template>
       </Column>
       <Column header="Edit/Delete" class="column-large-screen">
         <template #body="{ index }">
-          <edit-delete-buttons
+          <EditDeleteButtons
             :delete-item="spellSetters.deleteSpell"
             :index="index"
             :get-record="spellGetters.getSpellbyIndex"
@@ -102,15 +101,15 @@ onBeforeUnmount(() => {
             :componentType="ComponentIs.AddSpell"
             :emit-delete-function="spellEmits.emitDeleteSpell"
             :emit-save-function="spellEmits.emitUpdateSpell"
-          ></edit-delete-buttons>
+          ></EditDeleteButtons>
         </template>
       </Column>
       <Column header="Spell Options" class="column-small-screen">
         <template #body="{ index }">
-          <mobile-menu
+          <MobileMenu
             :index="index"
             :component-type="ReturnTypes.SPELLS"
-          ></mobile-menu>
+          ></MobileMenu>
         </template>
       </Column>
     </DataTable>

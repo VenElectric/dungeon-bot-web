@@ -1,3 +1,29 @@
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import { StatusEffect } from "../../../Interfaces/initiative";
+import serverLogger from "../../../Utils/LoggingClass";
+import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
+import INITIATIVE_FUNCS from "../../../data/initiativeStore";
+
+const {
+  GETTERS: initGetters,
+  SETTERS: initSetters,
+  EMITS: initEmits,
+} = INITIATIVE_FUNCS;
+
+const props = defineProps({
+  index: { type: Number, required: true },
+});
+
+const statusEffects = ref(initGetters.getInitbyIndex(props.index).statusEffects)
+const lengthNumber = computed(() => statusEffects.value.length);
+serverLogger(
+  LoggingTypes.debug,
+  `container created`,
+  ComponentEnums.EFFECTCONTAINER
+);
+</script>
+
 <template>
   <h3 class="mt-0">Effects</h3>
   <div v-if="lengthNumber > 0" class="flex flex-column align-content-center">
@@ -7,31 +33,6 @@
   </div>
   <div v-else>No Effects to Display</div>
 </template>
-
-<script lang="ts">
-import { computed, defineComponent, PropType, reactive, watch } from "vue";
-import { StatusEffect } from "../../../Interfaces/initiative";
-import serverLogger from "../../../Utils/LoggingClass";
-import { LoggingTypes, ComponentEnums } from "../../../Interfaces/LoggingTypes";
-
-export default defineComponent({
-  name: "EffectContainer",
-  props: {
-    statusEffects: { type: Array as PropType<StatusEffect[]>, required: true },
-  },
-  setup(props) {
-    const lengthNumber = computed(() => props.statusEffects.length);
-    serverLogger(
-      LoggingTypes.debug,
-      `container created`,
-      ComponentEnums.EFFECTCONTAINER
-    );
-    console.log(props.statusEffects);
-
-    return { lengthNumber };
-  },
-});
-</script>
 
 <style scoped>
 .effect-cage {

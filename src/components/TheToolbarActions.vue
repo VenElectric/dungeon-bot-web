@@ -38,7 +38,7 @@ onUnmounted(() => stop());
       </div>
       <div v-if="windowSize < 1000">
         <MobileSidebar>
-          <div class="flex flex-column gap-6 mt-5 mx-auto w-12">
+          <div class="flex flex-column gap-5 mt-6 mx-auto w-10">
             <slot></slot>
             <slot name="end"></slot>
           </div>
